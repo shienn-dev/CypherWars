@@ -1,0 +1,15 @@
+{
+  "name": "cipher-wars",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cipher Wars — game edukasi komposisi fungsi (SMP/SMA). Vanilla JS, tanpa build step.",
+  "scripts": {
+    "start": "python -m http.server 8123",
+    "qa": "node test/qa.js",
+    "e2e": "node test/e2e.js",
+    "test": "node test/qa.js && node test/e2e.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.0"
+  }
+}
