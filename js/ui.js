@@ -129,7 +129,8 @@
   U.bindBattle = (battle, save, flow) => { B = battle; saveRef = save; flowApi = flow; };
 
   U.renderBattle = () => {
-    $('bh-stage').textContent = 'SEKTOR ' + B.stage.id + ' \u00B7 ' + B.stage.name.toUpperCase();
+    const w = B.waves.length > 1 ? ' \u00B7 WAVE ' + (B.waveIndex + 1) + '/' + B.waves.length : '';
+    $('bh-stage').textContent = 'SEKTOR ' + B.stage.id + ' \u00B7 ' + B.stage.name.toUpperCase() + w;
     $('bh-turn').textContent = 'GILIRAN ' + B.turn;
     $('enemy-name').textContent = B.enemy.name;
     $('enemy-name').style.color = B.enemy.color;
@@ -162,7 +163,10 @@
       poison: ['\u2620', 'Menyiapkan RACUN DIGITAL'],
       slow: ['\u23F3', 'Mengisi PEMUTAR WAKTU (timer \u2193)'],
       combo: ['\u26D3', 'Mengisi PEMUTUS RANTAI (combo \u2192 0)'],
-      ult: ['\u2620', 'MENGISI PROTOCOL PEMBERSIHAN!']
+      ult: ['\u2620', 'MENGISI PROTOCOL PEMBERSIHAN!'],
+      reflect: ['\uD83E\uDE9E', 'Mengisi PERISAI CERMIN (damage dipantulkan)'],
+      enrage: ['\uD83D\uDD25', 'MENGAMUK (damage musuh \u2191 permanen)'],
+      cleanse: ['\u26A0', 'Menyiapkan PEMBERSIH (shield & buff dihapus)']
     };
     const m = map[mv.type] || ['?', mv.type];
     icon.textContent = m[0];
@@ -177,7 +181,9 @@
     $('enemy-hptext').textContent = e.hp + ' / ' + e.maxHp;
     $('enemy-shield').textContent = e.shield > 0 ? '\uD83D\uDEE1 SHIELD ' + e.shield : '';
     $('enemy-status').innerHTML =
-      (e.chargingUlt ? '<span class="status-chip charging">\u2620 MENGISI ULTIMATE</span>' : '');
+      (e.chargingUlt ? '<span class="status-chip charging">\u2620 MENGISI ULTIMATE</span>' : '') +
+      (e.reflectTurns > 0 ? '<span class="status-chip reflect">\uD83E\uDE9E CERMIN (' + e.reflectTurns + ')</span>' : '') +
+      (e.enrage > 0 ? '<span class="status-chip enrage">\uD83D\uDD25 AMUK +' + e.enrage + '%</span>' : '');
     // Player
     $('player-hpfill').style.width = (p.hp / p.maxHp * 100) + '%';
     $('player-hptext').textContent = p.hp + ' / ' + p.maxHp;
@@ -198,6 +204,8 @@
     const cm = $('combo-meter');
     cm.textContent = 'COMBO x' + p.combo;
     cm.classList.toggle('hot', p.combo >= 3);
+    const sm = $('shard-meter');
+    if (sm) sm.textContent = '\u2B21 ' + p.shards + ' SHARD';
     $('bh-turn').textContent = 'GILIRAN ' + B.turn;
     updateEnemyIntent();
   };

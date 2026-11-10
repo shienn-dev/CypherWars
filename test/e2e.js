@@ -232,7 +232,9 @@ async function runB() {
   assert(b && b.enemy.name === 'SENTINEL-01', 'battle created');
   // TEST PREP: drop HP so one enemy counter triggers defeat — the defeat
   // transition itself (stats, result screen, retry) is what's under test.
+  // Force the enemy to only have a lethal attack so the counter is deterministic.
   b.player.hp = 5;
+  b.enemyDef.moves = [{ type: 'attack', value: 50, weight: 1 }];
   win.CW.ui.updateHUD();
 
   const turn0 = b.turn;
@@ -336,14 +338,52 @@ async function runD() {
   win.close();
 }
 
+/* ================= Run E: multi-wave sector + shard economy ================= */
+async function runE() {
+  console.log('\n== Run E: multi-wave sector + shard economy ==');
+  const { dom, pageErrors } = await boot({
+    save: seedSave({ unlockedStage: 4, level: 5, seenIntro: true, stats: { wins: 3 } })
+  });
+  const win = dom.window;
+
+  doc(dom).getElementById('btn-continue').click();
+  await sleep(80);
+  const cards = [...doc(dom).querySelectorAll('#stage-grid .stage-card')];
+  cards[3].click();   // SEKTOR 04 — NULLSNAKE then BYTE-HYENA
+  await sleep(140);
+
+  const b = win.CW.main.battle;
+  assert(b.waves.length === 2, 'stage 4 configured with 2 waves');
+  assert(doc(dom).getElementById('bh-stage').textContent.includes('WAVE 1/2'), 'HUD shows WAVE 1/2');
+
+  // clear the first wave only
+  for (let i = 0; i < 30 && b.waveIndex < 1 && b.phase !== 'over'; i++) {
+    const turnBefore = b.turn;
+    await doAction(dom, 'Serang');
+    await answerQuestion(dom, 'correct');
+    await settle(dom, turnBefore, 'wave1 strike #' + i);
+  }
+  assert(b.waveIndex >= 1, 'advanced to the second wave');
+  assert(doc(dom).getElementById('bh-stage').textContent.includes('WAVE 2/2'), 'HUD updates to WAVE 2/2');
+  assert(b.player.shards > 0, 'shards earned from kills/answers');
+  assert(doc(dom).getElementById('shard-meter').textContent.includes('SHARD'), 'shard meter rendered');
+
+  await battleToVictory(dom);
+  await waitFor(() => !doc(dom).getElementById('modal-result').hidden, 'result shows');
+  assert(doc(dom).getElementById('result-box').textContent.includes('GUARDIAN DIKALAHKAN'), 'sector cleared after both waves');
+
+  assert(pageErrors.length === 0, 'no uncaught page errors in run E' + (pageErrors[0] ? ': ' + pageErrors[0] : ''));
+  win.close();
+}
+
 /* ================= runner ================= */
 (async () => {
   console.log('CIPHER WARS E2E (jsdom) — target ' + BASE);
-  const runs = { a: runA, b: runB, c: runC, d: runD };
+  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE };
   const only = process.argv[2];
   try {
     if (only && runs[only]) await runs[only]();
-    else { await runA(); await runB(); await runC(); await runD(); }
+    else { await runA(); await runB(); await runC(); await runD(); await runE(); }
   } catch (e) {
     failures++;
     console.error('\nFATAL: ' + ((e && e.stack) || e));

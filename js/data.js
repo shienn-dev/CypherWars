@@ -50,6 +50,7 @@
       moves: [
         { type: 'attack', value: 9, weight: 4 },
         { type: 'shield', value: 14, weight: 4 },
+        { type: 'cleanse', value: 0, weight: 2 },
         { type: 'heavy', value: 16, weight: 2 }
       ]
     },
@@ -61,6 +62,7 @@
       moves: [
         { type: 'attack', value: 10, weight: 4 },
         { type: 'combo', value: 6, weight: 3 },   // resets combo + chip damage
+        { type: 'cleanse', value: 0, weight: 2 }, // strips player shield & buffs
         { type: 'drain', value: 2, weight: 3 }    // steals energy
       ]
     },
@@ -72,6 +74,7 @@
       moves: [
         { type: 'attack', value: 9, weight: 4 },
         { type: 'heavy', value: 18, weight: 3 },
+        { type: 'enrage', value: 25, weight: 2 }, // +25% damage for the rest of the fight
         { type: 'ult', value: 26, weight: 2 }     // telegraphs, lands next turn
       ]
     },
@@ -94,6 +97,7 @@
       moves: [
         { type: 'attack', value: 11, weight: 4 },
         { type: 'shield', value: 12, weight: 4 },
+        { type: 'reflect', value: 3, weight: 3 }, // 3 turns reflecting 40% damage
         { type: 'heavy', value: 15, weight: 2 }
       ]
     },
@@ -132,6 +136,7 @@
         { type: 'heavy', value: 22, weight: 3 },
         { type: 'shield', value: 18, weight: 2 },
         { type: 'poison', value: 6, weight: 1 },
+        { type: 'enrage', value: 30, weight: 1 }, // +30% damage when it ramps up
         { type: 'ult', value: 34, weight: 2 },
         { type: 'drain', value: 3, weight: 1 }
       ]
@@ -139,16 +144,16 @@
   };
 
   D.stages = [
-    { id: 1,  enemy: 'sentinel', tier: 1, timeMod: 1.0,  name: 'Gerbang Perimeter' },
-    { id: 2,  enemy: 'hyena',    tier: 2, timeMod: 0.95, name: 'Padang Data' },
-    { id: 3,  enemy: 'aegis',    tier: 2, timeMod: 0.95, name: 'Benteng Aegis' },
-    { id: 4,  enemy: 'nullsnake',tier: 3, timeMod: 0.9,  name: 'Sarang Null' },
-    { id: 5,  enemy: 'rex',      tier: 3, timeMod: 0.9,  name: 'Tahta Kalkulus' },
-    { id: 6,  enemy: 'virus',    tier: 4, timeMod: 0.85, name: 'Zona Mutasi' },
-    { id: 7,  enemy: 'mirror',   tier: 4, timeMod: 0.85, name: 'Lorong Cermin' },
-    { id: 8,  enemy: 'fox',      tier: 4, timeMod: 0.8,  name: 'Hutan Kuantum' },
-    { id: 9,  enemy: 'omega',    tier: 5, timeMod: 0.8,  name: 'Menara Omega' },
-    { id: 10, enemy: 'nexus',    tier: 5, timeMod: 0.75, name: 'Inti NEXUS' }
+    { id: 1,  enemy: 'sentinel', tier: 1, timeMod: 1.0,  name: 'Gerbang Perimeter', waves: ['sentinel'] },
+    { id: 2,  enemy: 'hyena',    tier: 2, timeMod: 0.95, name: 'Padang Data',       waves: ['hyena'] },
+    { id: 3,  enemy: 'aegis',    tier: 2, timeMod: 0.95, name: 'Benteng Aegis',     waves: ['aegis'] },
+    { id: 4,  enemy: 'nullsnake',tier: 3, timeMod: 0.9,  name: 'Sarang Null',       waves: ['nullsnake', 'hyena'] },
+    { id: 5,  enemy: 'rex',      tier: 3, timeMod: 0.9,  name: 'Tahta Kalkulus',    waves: ['rex'] },
+    { id: 6,  enemy: 'virus',    tier: 4, timeMod: 0.85, name: 'Zona Mutasi',       waves: ['virus', 'nullsnake'] },
+    { id: 7,  enemy: 'mirror',   tier: 4, timeMod: 0.85, name: 'Lorong Cermin',     waves: ['mirror', 'aegis'] },
+    { id: 8,  enemy: 'fox',      tier: 4, timeMod: 0.8,  name: 'Hutan Kuantum',     waves: ['fox', 'hyena'] },
+    { id: 9,  enemy: 'omega',    tier: 5, timeMod: 0.8,  name: 'Menara Omega',      waves: ['omega', 'mirror'] },
+    { id: 10, enemy: 'nexus',    tier: 5, timeMod: 0.75, name: 'Inti NEXUS',        waves: ['nexus', 'rex'] }
   ];
 
   /* ---------- Player abilities ----------
@@ -193,7 +198,31 @@
     }
   ];
 
+  /* ---------- Base structures (Defense Protocol) ----------
+     Built between waves with Data Shards. Each build/upgrade costs a
+     decryption question to complete. Levels persist for the whole sector. */
+  D.structures = [
+    {
+      id: 'firewall', name: 'Firewall', icon: 'shield', cost: 6, maxLvl: 3, perLevel: 4,
+      desc: 'Regenerasi +4 SHIELD setiap giliran per level.'
+    },
+    {
+      id: 'turret', name: 'Turret Kode', icon: 'bolt', cost: 8, maxLvl: 3, perLevel: 5,
+      desc: 'Menembak musuh +5 damage otomatis setiap giliran per level.'
+    },
+    {
+      id: 'reactor', name: 'Reaktor', icon: 'chip', cost: 7, maxLvl: 2, perLevel: 1,
+      desc: '+1 energi tambahan setiap giliran per level.'
+    },
+    {
+      id: 'medbay', name: 'Nanomedik', icon: 'heart', cost: 7, maxLvl: 3, perLevel: 4,
+      desc: 'Memulihkan +4 HP setiap giliran per level.'
+    }
+  ];
+
   /* ---------- Progression ---------- */
+  D.shardPerCorrect = 2;    // Data Shards earned per correct decryption
+  D.shardPerKill = 5;       // bonus Shards per enemy taken down
   D.playerBase = { hp: 90, hpPerLevel: 6, energyMax: 7, energyPerTurn: 1, startEnergy: 3 };
   D.xpForLevel = lvl => 60 + (lvl - 1) * 45;   // XP needed to go from lvl to lvl+1
   D.comboBonusEnergy = [3, 5];                  // combo thresholds granting +1 energy

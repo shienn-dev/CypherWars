@@ -192,7 +192,7 @@ for (let sim = 0; sim < 200; sim++) {
   const b = CW.battle.create(stage, playerState);
   assert(b.enemy.nextMove !== null, 'initial telegraph missing');
   let turns = 0;
-  while (b.phase !== 'over' && turns < 200) {
+  while (b.phase !== 'over' && turns < 500) {
     turns++;
     // Player: pick a random affordable ability
     const abil = CW.battle.unlockedAbilities(playerState.level)
@@ -211,15 +211,24 @@ for (let sim = 0; sim < 200; sim++) {
       CW.battle.startPlayerTurn(b);
       continue;
     }
-    if (CW.battle.enemyDead(b)) break;
+    if (CW.battle.enemyDead(b)) {
+      CW.battle.awardKill(b);
+      if (!CW.battle.nextWave(b)) break;
+      CW.battle.startPlayerTurn(b);
+      continue;
+    }
     if (CW.battle.playerDead(b)) break;
     if (correctResult(events, okRef(events))) {}
     // after player action: enemy turn then next turn
     events = CW.battle.endPlayerPhase(b);
     if (CW.battle.playerDead(b)) break;
+    if (CW.battle.enemyDead(b)) {
+      CW.battle.awardKill(b);
+      if (!CW.battle.nextWave(b)) break;
+    }
     CW.battle.startPlayerTurn(b);
   }
-  assert(turns < 200, 'battle did not terminate: stage ' + stage.id);
+  assert(turns < 500, 'battle did not terminate: stage ' + stage.id);
   // invariants
   assert(b.player.hp >= 0 && b.player.hp <= b.player.maxHp, 'player hp out of range');
   assert(b.enemy.hp >= 0 && b.enemy.hp <= b.enemy.maxHp, 'enemy hp out of range');
@@ -243,6 +252,72 @@ for (let i = 0; i < 1000; i++) {
     const v = p.slice().reverse().reduce((a, c) => a * q.answer + c, 0);
     assert(v === k, 'solve wrong: f(' + q.answer + ')=' + v + ' != ' + k + ' | ' + q.prompt);
   }
+}
+
+/* ================= 5. Defense structures ================= */
+console.log('== Defense structures & mechanics ==');
+{
+  const stage = CW.data.stages[0];
+  const ps = { level: 5, stats: { correct: 0, wrong: 0, bestCombo: 0 } };
+  const b = CW.battle.create(stage, ps);
+  assert(b.waves.length === (stage.waves || [stage.enemy]).length, 'wave list initialised');
+  assert(CW.battle.waveInfo(b).current === 1, 'starts on wave 1');
+
+  // shard gating
+  b.player.shards = 0;
+  const fw = CW.data.structures.find(s => s.id === 'firewall');
+  assert(!CW.battle.canBuild(b, fw), 'cannot build without shards');
+  b.player.shards = 100;
+  const cost1 = CW.battle.buildCost(b, fw);
+  assert(CW.battle.applyBuild(b, fw), 'applyBuild succeeds with shards');
+  assert(b.structures.firewall === 1, 'firewall level 1');
+  assert(CW.battle.buildCost(b, fw) > cost1, 'cost scales with level');
+  while (CW.battle.canBuild(b, fw)) CW.battle.applyBuild(b, fw);
+  assert(b.structures.firewall === fw.maxLvl, 'caps at maxLvl');
+  assert(!CW.battle.canBuild(b, fw), 'cannot exceed maxLvl');
+
+  // structures act at start of turn
+  b.structures = { firewall: 1, turret: 1, reactor: 1, medbay: 1 };
+  b.player.shield = 0; b.player.hp = b.player.maxHp - 20; b.player.energy = 0;
+  const ehpBefore = b.enemy.hp;
+  const evs = CW.battle.startPlayerTurn(b);
+  assert(b.player.shield >= 4, 'firewall grants shield');
+  assert(b.player.hp > b.player.maxHp - 20, 'medbay heals');
+  assert(b.enemy.hp <= ehpBefore, 'turret damages enemy');
+  assert(evs.some(e => e.kind === 'turretShot'), 'turret event emitted');
+}
+
+/* ================= 6. Enemy mechanics: reflect / enrage / cleanse ================= */
+{
+  const ps = { level: 5, stats: { correct: 0, wrong: 0, bestCombo: 0 } };
+  const b = CW.battle.create(CW.data.stages[0], ps);
+  // reflect: player attack bounces back
+  b.enemy.reflectTurns = 3;
+  b.player.hp = b.player.maxHp;
+  const hp0 = b.player.hp;
+  const qd = CW.battle.makeQuestion(b, ps, { purpose: { type: 'attack', name: 'x', value: 20, id: 'strike' } });
+  CW.battle.answer(b, ps, qd.q.answer, false);
+  assert(b.player.hp < hp0, 'reflect damages the player');
+  // pierce bypasses reflect
+  b.enemy.reflectTurns = 3; b.player.hp = b.player.maxHp;
+  const hp1 = b.player.hp;
+  const qd2 = CW.battle.makeQuestion(b, ps, { purpose: { type: 'attack', name: 'x', value: 20, id: 'pierce', pierce: true } });
+  CW.battle.answer(b, ps, qd2.q.answer, false);
+  assert(b.player.hp === hp1, 'pierce ignores reflect');
+  // enrage raises enemy damage (force an attack so the check is deterministic)
+  b.enemy.chargingUlt = null;
+  b.enemy.enrage = 100;
+  b.enemy.nextMove = { type: 'attack', value: 10 };
+  b.player.shield = 0;
+  const bhp = b.player.hp;
+  CW.battle.endPlayerPhase(b);
+  assert(b.player.hp < bhp, 'enraged attack deals amplified damage');
+  // cleanse strips shield & buffs
+  b.player.shield = 30; b.player.overclock = 3; b.player.analyzeReady = true;
+  b.enemy.chargingUlt = null;
+  b.enemy.nextMove = { type: 'cleanse', value: 0 };
+  CW.battle.endPlayerPhase(b);
+  assert(b.player.shield === 0 && b.player.overclock === 0 && b.player.analyzeReady === false, 'cleanse strips shield and buffs');
 }
 
 console.log('\n' + checks + ' checks run, ' + failures + ' failures');

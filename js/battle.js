@@ -17,33 +17,60 @@
 
   /* ---------- Factory ---------- */
   B.create = (stage, playerState) => {
-    const enemyDef = data().enemies[stage.enemy];
+    const waves = (stage.waves && stage.waves.length) ? stage.waves.slice() : [stage.enemy];
     const b = {
       stage,
-      enemyDef,
-      enemy: {
-        key: stage.enemy, name: enemyDef.name, title: enemyDef.title,
-        svg: enemyDef.svg, color: enemyDef.color,
-        hp: enemyDef.hp, maxHp: enemyDef.hp, shield: 0,
-        chargingUlt: null,      // move object when ult is telegraphed
-        nextMove: null          // telegraphed intent for the upcoming enemy turn
-      },
+      waves,
+      waveIndex: 0,
+      enemyDef: null,
+      enemy: null,
+      structures: { firewall: 0, turret: 0, reactor: 0, medbay: 0 },
       player: {
         name: 'OPERATIVE', maxHp: B.playerMaxHp(playerState.level),
         hp: B.playerMaxHp(playerState.level),
         shield: 0, energy: data().playerBase.startEnergy,
         energyMax: data().playerBase.energyMax,
-        combo: 0, bestCombo: 0,
+        combo: 0, bestCombo: 0, shards: 0,
         poison: 0, poisonDmg: 0, slow: 0, overclock: 0,
         analyzeReady: false, interruptReady: false
       },
       turn: 1, phase: 'player',       // player | question | enemy | over
       question: null, lastResult: null, log: []
     };
-    B.log(b, 'sys', 'Menghubungi ' + enemyDef.name + ' \u2014 ' + enemyDef.title);
-    B.log(b, 'sys', enemyDef.intro);
+    B.spawnEnemy(b, waves[0]);
+    B.log(b, 'sys', 'Menghubungi ' + b.enemy.name + ' \u2014 ' + b.enemy.title);
+    B.log(b, 'sys', b.enemyDef.intro);
     b.enemy.nextMove = B.pickEnemyMove(b);   // first telegraph
     return b;
+  };
+
+  /* ---------- Waves (Defense Protocol) ---------- */
+  B.spawnEnemy = (b, key) => {
+    const def = data().enemies[key];
+    b.enemyDef = def;
+    b.enemy = {
+      key, name: def.name, title: def.title,
+      svg: def.svg, color: def.color,
+      hp: def.hp, maxHp: def.hp, shield: 0,
+      chargingUlt: null,      // move object when ult is telegraphed
+      nextMove: null,         // telegraphed intent for the upcoming enemy turn
+      reflectTurns: 0,        // turns of damage reflection remaining
+      enrage: 0               // percentage damage bonus (permanent this fight)
+    };
+    return b.enemy;
+  };
+
+  B.waveInfo = b => ({ current: b.waveIndex + 1, total: b.waves.length, name: b.enemy.name });
+
+  /* Advance to the next wave. Returns true if a new enemy spawned, false if
+     the sector is cleared. Resets only enemy-side state, never player state. */
+  B.nextWave = b => {
+    if (b.waveIndex + 1 >= b.waves.length) return false;
+    b.waveIndex++;
+    B.spawnEnemy(b, b.waves[b.waveIndex]);
+    B.log(b, 'bad', 'GELOMBANG ' + (b.waveIndex + 1) + '/' + b.waves.length + ' \u2014 ' + b.enemy.name + ' menerjang!');
+    b.enemy.nextMove = B.pickEnemyMove(b);
+    return true;
   };
 
   /* ---------- Logging ---------- */
@@ -113,8 +140,47 @@
       B.log(b, 'info', 'Shield ' + b.enemy.name + ' menyerap ' + absorbed + ' damage.');
     }
     if (dmg > 0) b.enemy.hp = Math.max(0, b.enemy.hp - dmg);
-    return { dealt: dmg, absorbed: raw - dmg };
+    let reflected = 0;
+    // Mirror: while active, part of the hit bounces back (pierce bypasses it).
+    if (!pierce && b.enemy.reflectTurns > 0 && dmg > 0) {
+      const back = Math.round(dmg * 0.4);
+      if (back > 0) {
+        const pr = damagePlayer(b, back);
+        reflected = pr.dealt;
+      }
+    }
+    return { dealt: dmg, absorbed: raw - dmg, reflected };
   }
+
+  /* ---------- Base structures (Defense Protocol) ---------- */
+  B.buildCost = (b, def) => def.cost * (b.structures[def.id] + 1);
+  B.canBuild = (b, def) =>
+    b.structures[def.id] < def.maxLvl && b.player.shards >= B.buildCost(b, def);
+
+  B.buildInfo = b => data().structures.map(def => {
+    const level = b.structures[def.id];
+    return {
+      def, level, max: def.maxLvl,
+      cost: B.buildCost(b, def),
+      maxed: level >= def.maxLvl,
+      affordable: b.player.shards >= B.buildCost(b, def)
+    };
+  });
+
+  /* Commit a build/upgrade after its decryption succeeded. */
+  B.applyBuild = (b, def) => {
+    if (!B.canBuild(b, def)) return false;
+    b.player.shards -= B.buildCost(b, def);
+    b.structures[def.id]++;
+    B.log(b, 'good', def.name + ' tingkat ' + b.structures[def.id] + ' dibangun!');
+    return true;
+  };
+
+  B.awardKill = b => {
+    const s = data().shardPerKill;
+    b.player.shards += s;
+    return s;
+  };
 
   /* ---------- Question generation ---------- */
   B.makeQuestion = (b, playerState, opts) => {
@@ -181,6 +247,8 @@
     }
     B.log(b, 'good', 'DEKRIPSI BERHASIL! Combo x' + b.player.combo);
     events.push({ kind: 'correct', combo: b.player.combo });
+    b.player.shards += data().shardPerCorrect;
+    events.push({ kind: 'shard', amount: data().shardPerCorrect });
 
     // Interrupt: cancel telegraphed ult
     if (q.interrupt) {
@@ -216,6 +284,10 @@
         const ev = damageEnemy(b, dmg, !!ab.pierce);
         B.log(b, 'atk', ab.name + '! Damage ' + ev.dealt + (ab.pierce ? ' (menembus shield)' : '') + '.');
         events.push({ kind: 'enemyHit', dealt: ev.dealt, absorbed: ev.absorbed, pierce: !!ab.pierce, ability: ab.id });
+        if (ev.reflected > 0) {
+          B.log(b, 'bad', 'Perisai cermin memantulkan ' + ev.reflected + ' damage kembali padamu!');
+          events.push({ kind: 'playerReflect', dealt: ev.reflected });
+        }
         break;
       }
       case 'shield': {
@@ -254,8 +326,9 @@
     switch (move.type) {
       case 'attack':
       case 'heavy': {
-        const ev = damagePlayer(b, move.value);
-        B.log(b, 'bad', name + ' menyerang: ' + move.value + ' damage' + (ev.absorbed ? ' (' + ev.absorbed + ' diserap shield)' : '') + '.');
+        const raw = Math.round(move.value * (1 + (b.enemy.enrage || 0) / 100));
+        const ev = damagePlayer(b, raw);
+        B.log(b, 'bad', name + ' menyerang: ' + raw + ' damage' + (ev.absorbed ? ' (' + ev.absorbed + ' diserap shield)' : '') + '.');
         events.push({ kind: 'playerHit', dealt: ev.dealt, absorbed: ev.absorbed, heavy: move.type === 'heavy' });
         break;
       }
@@ -301,9 +374,32 @@
       }
       case 'ult': {
         // Should only be reached when landing a previously telegraphed ult
-        const ev = damagePlayer(b, move.value);
-        B.log(b, 'bad', 'PROTOKOL PEMBERSIHAN! ' + name + ' melepas ULTIMATE: ' + move.value + ' damage!');
+        const raw = Math.round(move.value * (1 + (b.enemy.enrage || 0) / 100));
+        const ev = damagePlayer(b, raw);
+        B.log(b, 'bad', 'PROTOKOL PEMBERSIHAN! ' + name + ' melepas ULTIMATE: ' + raw + ' damage!');
         events.push({ kind: 'playerHit', dealt: ev.dealt, absorbed: ev.absorbed, ult: true });
+        break;
+      }
+      case 'reflect': {
+        b.enemy.reflectTurns = move.value;
+        B.log(b, 'info', name + ' mengaktifkan PERISAI CERMIN ' + move.value + ' giliran \u2014 serangan balik padamu!');
+        events.push({ kind: 'enemyReflect', turns: move.value });
+        break;
+      }
+      case 'enrage': {
+        b.enemy.enrage += move.value;
+        B.log(b, 'bad', name + ' mengamuk! Damage musuh +' + move.value + '% (total +' + b.enemy.enrage + '%).');
+        events.push({ kind: 'enemyEnrage', amount: move.value });
+        break;
+      }
+      case 'cleanse': {
+        const hadShield = b.player.shield;
+        const hadBuff = (b.player.overclock > 0 ? 1 : 0) + (b.player.analyzeReady ? 1 : 0);
+        b.player.shield = 0;
+        b.player.overclock = 0;
+        b.player.analyzeReady = false;
+        B.log(b, 'bad', name + ' memancarkan PEMBERSIH: ' + hadShield + ' shield & ' + hadBuff + ' buff dihapus!');
+        events.push({ kind: 'cleanse', shield: hadShield, buffs: hadBuff });
         break;
       }
     }
@@ -358,12 +454,33 @@
     }
     if (p.slow > 0) { p.slow--; events.push({ kind: 'statusTick', status: 'slow' }); }
     if (p.overclock > 0) { p.overclock--; }
+    if (b.enemy.reflectTurns > 0) b.enemy.reflectTurns--;
+
+    // Base structures upkeep
+    const st = b.structures;
+    if (st.firewall > 0) {
+      const amt = st.firewall * 4;
+      p.shield += amt;
+      events.push({ kind: 'playerShield', amount: amt, source: 'firewall' });
+    }
+    if (st.medbay > 0) {
+      const healed = Math.min(st.medbay * 4, p.maxHp - p.hp);
+      if (healed > 0) { p.hp += healed; events.push({ kind: 'playerHeal', amount: healed, source: 'medbay' }); }
+    }
 
     // Energy income
-    let gain = data().playerBase.energyPerTurn + (p.overclock > 0 ? 1 : 0);
+    let gain = data().playerBase.energyPerTurn + (p.overclock > 0 ? 1 : 0) + st.reactor;
     const before = p.energy;
     p.energy = Math.min(p.energyMax, p.energy + gain);
     if (p.energy > before) events.push({ kind: 'energy', amount: p.energy - before, why: 'giliran' });
+
+    // Turret: passive attack on the current enemy
+    if (st.turret > 0 && b.enemy.hp > 0) {
+      const dmg = st.turret * 5;
+      const ev = damageEnemy(b, dmg, true);
+      B.log(b, 'atk', 'Turret Kode menembak ' + b.enemy.name + ': ' + ev.dealt + ' damage.');
+      events.push({ kind: 'turretShot', dealt: ev.dealt, absorbed: ev.absorbed });
+    }
 
     // Telegraph the enemy's next move for this turn's intent display
     b.enemy.nextMove = b.enemy.chargingUlt ? null : B.pickEnemyMove(b);

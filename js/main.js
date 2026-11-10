@@ -136,11 +136,28 @@
     ui().refreshLog();
     ui().updateHUD();
     await animateEvents(events, correct);
-    if (window.CW.battle.enemyDead(B)) return victory();
     if (window.CW.battle.playerDead(B)) return defeat();
+
+    const down = handleEnemyDown();
+    if (down === 'win') return;
+    if (down === 'wave') return nextTurn();   // new wave spawns; let player act first
 
     if (correct) await runEnemyTurn();
     else await nextTurn();
+  }
+
+  /* Enemy defeated: pay out the kill, spawn the next wave or win. */
+  function handleEnemyDown() {
+    if (!window.CW.battle.enemyDead(B)) return null;
+    const s = window.CW.battle.awardKill(B);
+    ui().toast('+' + s + ' \u2B21 DATA SHARD', 'gold');
+    if (window.CW.battle.nextWave(B)) {
+      ui().renderBattle();
+      ui().toast('GELOMBANG ' + (B.waveIndex + 1) + '/' + B.waves.length + ' \u2014 ' + B.enemy.name, 'warn');
+      return 'wave';
+    }
+    victory();
+    return 'win';
   }
 
   /* ================= Turn machinery ================= */
@@ -149,7 +166,8 @@
     ui().refreshLog();
     await animateEvents(events, null);
     if (window.CW.battle.playerDead(B)) return defeat();
-    if (window.CW.battle.enemyDead(B)) return victory();  // (paranoia: reflect-type future)
+    const down = handleEnemyDown();
+    if (down === 'win') return;
     await nextTurn();
   }
 
@@ -158,6 +176,8 @@
     ui().refreshLog();
     await animateEvents(events, null);
     if (B.phase === 'over' || window.CW.battle.playerDead(B)) return defeat();
+    const down = handleEnemyDown();   // a Turret shot may have finished a wave
+    if (down === 'win') return;
     ui().updateHUD();
     ui().renderActions();
     busy = false;
@@ -263,6 +283,38 @@
         case 'analyze':
         case 'overclock':
           await sleep(240);
+          break;
+        case 'shard':
+          window.CW.audio.fx.energy();
+          fx().energy(ev.amount);
+          await sleep(220);
+          break;
+        case 'turretShot':
+          if (ev.dealt > 0) { window.CW.audio.fx.hit(); fx().enemyHit(ev.dealt); }
+          await sleep(480);
+          break;
+        case 'playerReflect':
+          window.CW.audio.fx.debuff();
+          fx().playerHit(ev.dealt);
+          window.CW.ui.toast('Perisai cermin memantulkan ' + ev.dealt + ' damage!', 'warn');
+          await sleep(520);
+          break;
+        case 'enemyReflect':
+          window.CW.audio.fx.shield();
+          fx().enemyShield(ev.turns);
+          window.CW.ui.toast('\uD83E\uDE9E PERISAI CERMIN AKTIF (' + ev.turns + ' giliran) \u2014 damage dipantulkan!', 'warn');
+          await sleep(520);
+          break;
+        case 'enemyEnrage':
+          window.CW.audio.fx.telegraph();
+          fx().enemyAttackLunge();
+          window.CW.ui.toast('\uD83D\uDD25 MENGAMUK! Damage musuh +' + ev.amount + '%', 'warn');
+          await sleep(560);
+          break;
+        case 'cleanse':
+          window.CW.audio.fx.debuff();
+          window.CW.ui.toast('\u26A0 PEMBERSIH: shield & buff-mu dihapus!', 'warn');
+          await sleep(480);
           break;
       }
       window.CW.ui.updateHUD();
