@@ -70,7 +70,7 @@
       const enemy = CW.data.enemies[st.enemy];
       const unlocked = st.id <= save.unlockedStage;
       const done = st.id < save.unlockedStage;
-      const isBoss = enemy.ai === 'boss' || st.enemy === 'rex';
+      const isBoss = !!enemy.boss;
       const card = el('div', 'stage-card' + (unlocked ? '' : ' locked') + (done ? ' done' : '') + (isBoss && unlocked ? ' boss-stage' : ''));
       card.innerHTML =
         '<div class="stage-num">SEKTOR ' + String(st.id).padStart(2, '0') + '</div>' +
@@ -124,6 +124,7 @@
   let saveRef = null;     // active player save
   let flowApi = null;     // callbacks provided by main.js
   let timerInt = null;
+  let logRendered = 0;    // number of battle-log entries already in the DOM
 
   U.bindBattle = (battle, save, flow) => { B = battle; saveRef = save; flowApi = flow; };
 
@@ -137,6 +138,7 @@
     U.updateHUD();
     $('battle-log').innerHTML = '';
     B.log.slice(-30).forEach(l => appendLog(l));
+    logRendered = B.log.length;
   };
 
   function updateEnemyIntent() {
@@ -206,9 +208,8 @@
     box.scrollTop = box.scrollHeight;
   }
   U.refreshLog = () => {
-    const box = $('battle-log');
-    const known = box.childElementCount;
-    for (let i = known; i < B.log.length; i++) appendLog(B.log[i]);
+    for (let i = logRendered; i < B.log.length; i++) appendLog(B.log[i]);
+    logRendered = B.log.length;
   };
 
   /* ================= Action buttons ================= */

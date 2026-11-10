@@ -89,6 +89,7 @@
   /* ---------- RNG (injectable for deterministic tests) ---------- */
   let rng = Math.random;
   M.setRng = fn => { rng = fn; };
+  M.random = () => rng();   // shared RNG so battle logic is deterministic under test
   const ri = (lo, hi) => lo + Math.floor(rng() * (hi - lo + 1)); // inclusive
   const pick = arr => arr[Math.floor(rng() * arr.length)];
   function shuffle(a) {
@@ -210,7 +211,7 @@
     const x = ri(-4, 6);
     const k = M.pEval(p, x);
     const steps = [
-      'Langkah 1: tulis persamaan  ' + M.formatPoly(p).replace(/x/g, 'x') + ' = ' + k,
+      'Langkah 1: tulis persamaan  ' + M.formatPoly(p) + ' = ' + k,
       'Langkah 2: pindahkan konstanta:  ' + a + 'x = ' + k + ' ' + (p[0] < 0 ? '+' : '\u2212') + ' ' + Math.abs(p[0]) + ' = ' + (k - p[0]),
       'Langkah 3: bagi kedua ruas dengan ' + a + ':  x = ' + x,
       'Jadi x = ' + x + '.'

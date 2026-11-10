@@ -67,7 +67,7 @@
     rex: {
       name: 'KALKULUS REX', title: 'Raja Derivatif \u2605 MIDBOSS',
       hp: 120, svg: 'rex', color: '#ff8f5e',
-      ai: 'berserker', tier: 3, reward: 110,
+      ai: 'berserker', tier: 3, reward: 110, boss: true,
       intro: 'BOSS! Ia mengisi pukulan dahsyat \u2014 lihat telegraf-nya dan bersiap!',
       moves: [
         { type: 'attack', value: 9, weight: 4 },
@@ -125,7 +125,7 @@
     nexus: {
       name: 'NEXUS PRIME', title: 'Inti Sempurna \u2605 BOSS AKHIR',
       hp: 170, svg: 'nexus', color: '#ff5ef1',
-      ai: 'boss', tier: 5, reward: 200,
+      ai: 'boss', tier: 5, reward: 200, boss: true,
       intro: 'BOSS AKHIR! Guardian tertua. Kegelapan seluruh jaringan berpusat di sini.',
       moves: [
         { type: 'attack', value: 13, weight: 4 },
@@ -198,8 +198,6 @@
   D.xpForLevel = lvl => 60 + (lvl - 1) * 45;   // XP needed to go from lvl to lvl+1
   D.comboBonusEnergy = [3, 5];                  // combo thresholds granting +1 energy
   D.maxComboBonus = 5;                          // combo multiplier cap
-
-  D.enemyNames = Object.keys(D.enemies);
 
   window.CW = window.CW || {};
   window.CW.data = D;

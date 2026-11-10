@@ -34,7 +34,7 @@
         shield: 0, energy: data().playerBase.startEnergy,
         energyMax: data().playerBase.energyMax,
         combo: 0, bestCombo: 0,
-        poison: 0, slow: 0, overclock: 0,
+        poison: 0, poisonDmg: 0, slow: 0, overclock: 0,
         analyzeReady: false, interruptReady: false
       },
       turn: 1, phase: 'player',       // player | question | enemy | over
@@ -76,20 +76,23 @@
           moves = moves.filter(m => m.type === 'shield');
         break;
       case 'boss':
-        if (b.enemy.hp < b.enemy.maxHp * 0.3) moves.push({ type: 'ult', value: def.moves[4].value + 6, weight: 3 });
+        if (b.enemy.hp < b.enemy.maxHp * 0.3) {
+          const ult = def.moves.find(m => m.type === 'ult');
+          if (ult) moves.push({ type: 'ult', value: ult.value + 6, weight: 3 });
+        }
         break;
     }
     // Boss/berserker never re-telegraph while an ult is already charging
     if (b.enemy.chargingUlt) moves = moves.filter(m => m.type !== 'ult');
 
     const total = moves.reduce((s, m) => s + m.weight, 0);
-    let roll = Math.random() * total;
+    let roll = math().random() * total;
     for (const m of moves) { roll -= m.weight; if (roll <= 0) return m; }
     return moves[0];
   };
 
   /* ---------- Damage pipeline (enemy -> player) ---------- */
-  function damagePlayer(b, raw, src) {
+  function damagePlayer(b, raw) {
     let dmg = raw;
     if (b.player.shield > 0) {
       const absorbed = Math.min(b.player.shield, dmg);
@@ -155,6 +158,7 @@
       B.log(b, 'bad', timedOut ? 'WAKTU HABIS! Dekripsi gagal.' : 'DEKRIPSI SALAH! Jawaban yang benar: ' + q.q.answer);
       // Failed decrypt opens a window for the enemy
       const move = B.pickEnemyMove(b);
+      b.enemy.nextMove = null;   // old telegraph is consumed by the counter
       if (move.type !== 'ult') {
         events.push(...execEnemyMove(b, move, 'counter'));
       } else {
@@ -250,7 +254,7 @@
     switch (move.type) {
       case 'attack':
       case 'heavy': {
-        const ev = damagePlayer(b, move.value, move.type);
+        const ev = damagePlayer(b, move.value);
         B.log(b, 'bad', name + ' menyerang: ' + move.value + ' damage' + (ev.absorbed ? ' (' + ev.absorbed + ' diserap shield)' : '') + '.');
         events.push({ kind: 'playerHit', dealt: ev.dealt, absorbed: ev.absorbed, heavy: move.type === 'heavy' });
         break;
@@ -277,8 +281,9 @@
       }
       case 'poison': {
         b.player.poison = 3;
-        B.log(b, 'bad', name + ' menyuntik RACUN DIGITAL (3 giliran).');
-        events.push({ kind: 'poison' });
+        b.player.poisonDmg = move.value || 5;
+        B.log(b, 'bad', name + ' menyuntik RACUN DIGITAL (3 giliran, \u2212' + b.player.poisonDmg + ' HP/turn).');
+        events.push({ kind: 'poison', dmg: b.player.poisonDmg });
         break;
       }
       case 'slow': {
@@ -290,13 +295,13 @@
       case 'combo': {
         if (b.player.combo > 0) B.log(b, 'bad', name + ' MEMUTUS RANTAI! Combo x' + b.player.combo + ' hilang.');
         b.player.combo = 0;
-        const ev = damagePlayer(b, move.value, move.type);
+        const ev = damagePlayer(b, move.value);
         events.push({ kind: 'comboBreak', dealt: ev.dealt, absorbed: ev.absorbed });
         break;
       }
       case 'ult': {
         // Should only be reached when landing a previously telegraphed ult
-        const ev = damagePlayer(b, move.value, 'heavy');
+        const ev = damagePlayer(b, move.value);
         B.log(b, 'bad', 'PROTOKOL PEMBERSIHAN! ' + name + ' melepas ULTIMATE: ' + move.value + ' damage!');
         events.push({ kind: 'playerHit', dealt: ev.dealt, absorbed: ev.absorbed, ult: true });
         break;
@@ -345,9 +350,10 @@
 
     if (p.poison > 0) {
       p.poison--;
-      p.hp = Math.max(0, p.hp - 5);
-      B.log(b, 'bad', 'Racun digital menggerogoti sistem: \u22125 HP.');
-      events.push({ kind: 'poisonTick', amount: 5, turnsLeft: p.poison });
+      const tick = p.poisonDmg || 5;
+      p.hp = Math.max(0, p.hp - tick);
+      B.log(b, 'bad', 'Racun digital menggerogoti sistem: \u2212' + tick + ' HP.');
+      events.push({ kind: 'poisonTick', amount: tick, turnsLeft: p.poison });
       if (p.hp <= 0) { b.phase = 'over'; events.push({ kind: 'battleOver', win: false, why: 'racun' }); return events; }
     }
     if (p.slow > 0) { p.slow--; events.push({ kind: 'statusTick', status: 'slow' }); }

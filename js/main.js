@@ -101,7 +101,7 @@
     ui().renderBattle();
     ui().renderActions();
     const def = data().enemies[stage.enemy];
-    if (def.ai === 'boss' || stage.id === 5 || stage.id === 10) window.CW.audio.fx.bossIntro();
+    if (def.boss) window.CW.audio.fx.bossIntro();
     ui().toast('SEKTOR ' + stage.id + ': ' + stage.name, 'gold');
   }
 
@@ -221,7 +221,7 @@
           break;
         case 'poison':
           window.CW.audio.fx.debuff();
-          window.CW.ui.toast('\u2620 RACUN DIGITAL AKTIF (3 giliran)', 'warn');
+          window.CW.ui.toast('\u2620 RACUN DIGITAL AKTIF (3 giliran, \u2212' + ev.dmg + ' HP/turn)', 'warn');
           await sleep(420);
           break;
         case 'slow':
