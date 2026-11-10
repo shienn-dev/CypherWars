@@ -539,6 +539,98 @@
   };
   U.practiceNext = () => { CW.audio.ui.click(); U.practiceNew(); };
 
+  /* ================= Interactive tutorial ================= */
+  const TUT_LAST = 3;
+  let tutStep = 0, tutQ = null;
+
+  U.openTutorial = () => { tutStep = 0; tutQ = null; renderTutorial(); $('modal-howto').hidden = false; };
+  U.tutorialNext = () => {
+    if (tutStep >= TUT_LAST) { $('btn-howto-close').click(); return; }
+    tutStep++; renderTutorial();
+  };
+  U.tutorialPrev = () => { if (tutStep > 0) { tutStep--; renderTutorial(); } };
+
+  function renderTutorial() {
+    const prog = $('tut-progress');
+    prog.innerHTML = '';
+    for (let i = 0; i <= TUT_LAST; i++) {
+      prog.appendChild(el('span', 'tut-dot' + (i === tutStep ? ' active' : '') + (i < tutStep ? ' done' : '')));
+    }
+    $('tut-prev').disabled = tutStep === 0;
+    $('tut-next').textContent = tutStep === TUT_LAST ? 'Mulai Misi \u25B6' : 'Lanjut \u25B6';
+    const body = $('tut-body');
+
+    if (tutStep === 0) {
+      $('tut-title').textContent = 'MISI';
+      body.innerHTML =
+        '<p>Dunia digital jatuh ke tangan <b>Cipher Guardian</b>. Senjata satu-satunya: kemampuanmu menghitung <b>komposisi fungsi</b>.</p>' +
+        '<p>Setiap aksi \u2014 menyerang, membangun pertahanan, atau membatalkan ultimate \u2014 membutuhkan satu <b>dekripsi</b>. Jawaban benar berarti aksimu berhasil.</p>';
+    } else if (tutStep === 1) {
+      $('tut-title').textContent = 'KONSEP';
+      body.innerHTML =
+        '<p><b>(f \u2218 g)(x) = f(g(x))</b> \u2014 kerjakan dari <b>dalam ke luar</b>.</p>' +
+        '<div class="tut-demo">Misal f(x) = 2x + 1 dan g(x) = x\u00B2.<br>' +
+        '<button class="btn btn-sm btn-ghost" id="tut-s1">\u2460 Hitung g(2)</button> ' +
+        '<button class="btn btn-sm btn-ghost" id="tut-s2" disabled>\u2461 Substitusi ke f</button></div>' +
+        '<div class="tut-out" id="tut-out"></div>';
+      bindTutDemo();
+    } else if (tutStep === 2) {
+      $('tut-title').textContent = 'COBA SENDIRI';
+      renderTutQuestion();
+    } else {
+      $('tut-title').textContent = 'BERTARUNG & BERTAHAN';
+      body.innerHTML =
+        '<p><b>Bertarung:</b> aksi benar menaikkan <b>COMBO</b> dan memberi energi. Jawaban salah membuat musuh langsung membalas.</p>' +
+        '<p><b>Gelombang:</b> sebuah sektor berisi beberapa gelombang musuh yang datang berurutan.</p>' +
+        '<p><b>Bertahan:</b> jawaban benar menghasilkan <b>Data Shard \u2B21</b>. Belanjakan di tombol <b>Benteng</b> untuk membangun Firewall, Turret, Reaktor, dan Nanomedik \u2014 masing-masing dibangun lewat satu dekripsi.</p>' +
+        '<p><b>Tips:</b> baca <b>telegraf</b> di atas musuh. Ultimate dapat dibatalkan dengan <b>Interupsi</b>.</p>';
+    }
+  }
+
+  function bindTutDemo() {
+    const s1 = $('tut-s1'), s2 = $('tut-s2'), out = $('tut-out');
+    s1.addEventListener('click', () => {
+      CW.audio.ui.click();
+      out.innerHTML = 'g(2) = 2\u00B2 = <b>4</b>';
+      s1.disabled = true; s2.disabled = false;
+    });
+    s2.addEventListener('click', () => {
+      CW.audio.fx.correct();
+      out.innerHTML = 'f(4) = 2\u00B74 + 1 = <b>9</b><br>Jadi (f \u2218 g)(2) = <b>9</b>.';
+      s2.disabled = true;
+    });
+  }
+
+  function renderTutQuestion() {
+    const body = $('tut-body');
+    if (!tutQ) tutQ = CW.math.generate(1, 'eval');
+    body.innerHTML =
+      '<p>Hitung komposisi berikut. Sorot jawabanmu:</p>' +
+      '<div class="practice-prompt" id="tut-prompt"></div>' +
+      '<div class="q-options" id="tut-options"></div>' +
+      '<div class="q-feedback" id="tut-fb" hidden></div>';
+    $('tut-prompt').textContent = tutQ.prompt;
+    const opts = $('tut-options');
+    tutQ.options.forEach(o => {
+      const b = el('button', 'q-opt', String(o));
+      b.addEventListener('click', () => {
+        const ok = CW.math.check(tutQ, o);
+        [...opts.children].forEach(x => {
+          x.disabled = true;
+          if (CW.math.check(tutQ, x.textContent)) x.classList.add('correct');
+          else if (x === b) x.classList.add('wrong');
+          else x.classList.add('dimmed');
+        });
+        const fb = $('tut-fb');
+        fb.hidden = false;
+        fb.className = 'q-feedback ' + (ok ? 'good' : 'bad');
+        fb.textContent = ok ? '\u2713 Tepat! Begitulah cara menyerang.' : '\u2717 Belum tepat. Jawaban benar: ' + tutQ.answer;
+        if (ok) CW.audio.fx.correct(); else CW.audio.fx.wrong();
+      });
+      opts.appendChild(b);
+    });
+  }
+
   /* ================= Result modal ================= */
   U.showResult = html => {
     $('result-box').innerHTML = html;

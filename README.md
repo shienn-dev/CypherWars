@@ -8,7 +8,10 @@ Setiap dekripsi yang benar adalah serangan; setiap kesalahan membuka celah bagi 
 
 ## Fitur
 
+- **Defense Protocol (MMO-RPG)**: tiap sektor terdiri dari **beberapa gelombang (wave)** musuh. Jawaban benar menghasilkan **Data Shard ⬡**; belanjakan di tombol **Benteng** untuk membangun/meng-upgrade pertahanan — **setiap pembangunan butuh satu dekripsi berhasil**.
+- **4 struktur pertahanan**: Firewall (regen shield), Turret Kode (damage pasif), Reaktor (+energi), Nanomedik (heal) — levelnya bertahan selama satu sektor.
 - **10 sektor campaign** dengan 10 Guardian ber-AI berbeda: agresif, bertahan, toksik, pengacau combo, penipu waktu, adaptif, hingga 2 boss dengan *ultimate* ber-telegraf yang bisa dibatalkan lewat **Interupsi**.
+- **Mekanik musuh baru**: `reflect` (perisai cermin memantulkan damage), `enrage` (amukan menaikkan damage permanen), `cleanse` (menghapus shield & buff pemain).
 - **3 tipe soal** yang dibangkitkan secara prosedural dari mesin polinom eksak (aritmetika integer, tanpa floating-point error):
   - `eval` — hitung nilai `(f ∘ g)(-2)` dari rantai komposisi 2–3 fungsi
   - `solve` — selesaikan `f(x) = k`
@@ -16,6 +19,7 @@ Setiap dekripsi yang benar adalah serangan; setiap kesalahan membuka celah bagi 
 - **5 tier kesulitan** — dari dua fungsi linear hingga komposisi kuadrat tiga lapis; timer mengecil seiring sektor.
 - **Distraktor cerdas**: pilihan salah dibuat dari kesalahan umum siswa (mem balik urutan komposisi, mengalikan alih-alih menyusun, lupa substitusi, dsb).
 - **9 kemampuan** (Serang, Perisai, Analisis, Kuantum, Penembus Kode, Regenerasi, Overclock, Interupsi, Eksekusi Total) yang terbuka seiring level, sistem energi, combo, shield, poison/slow.
+- **Mode belajar**: tab **Materi** di Kamus Kode, layar **Latihan Bebas** (tanpa timer/musuh, pilih tier, buka langkah kapan saja), dan **tutorial interaktif** saat pertama main.
 - **Petunjuk & pembahasan lengkap** per soal (tombol 💡, atau ability Analisis untuk menampilkan langkah sebelum menjawab).
 - **Progres tersimpan** otomatis di localStorage — level, XP, sektor terbuka, statistik akurasi.
 - Efek suara WebAudio sintetis + mode bisu.
@@ -44,8 +48,8 @@ npm install        # hanya untuk pengujian (jsdom)
 npm test
 ```
 
-- `npm run qa` — stress test mesin matematika & simulasi 200 pertarungan (~30.000 asersi): setiap jawaban diverifikasi terhadap evaluator polinom independen.
-- `npm run e2e` — uji wiring end-to-end di jsdom: alur lengkap title → battle → menang/kalah → level-up → save, dengan klik DOM sungguhan.
+- `npm run qa` — stress test mesin matematika & simulasi 200 pertarungan (ribuan asersi): setiap jawaban diverifikasi terhadap evaluator polinom independen, plus cek gelombang, struktur, dan mekanik musuh.
+- `npm run e2e` — uji wiring end-to-end di jsdom (butuh server lokal): alur title → tutorial → battle → menang/kalah → level-up → wave → Benteng → Latihan Bebas → save.
 
 ## Struktur Proyek
 

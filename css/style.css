@@ -555,6 +555,27 @@ body.flash-red::after {
 .practice-prompt { font-family: var(--mono); font-size: 15px; line-height: 1.8; color: var(--text); white-space: pre-wrap; margin-bottom: 16px; }
 .practice-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 
+/* ---------- Interactive tutorial ---------- */
+.tutorial-box { width: min(640px, 96vw); }
+.tut-progress { display: flex; gap: 8px; margin-bottom: 12px; }
+.tut-dot {
+  width: 26px; height: 4px; background: var(--line);
+  transition: background 0.2s;
+}
+.tut-dot.done { background: var(--cyan-dim); }
+.tut-dot.active { background: var(--cyan); box-shadow: 0 0 8px rgba(77, 216, 255, 0.7); }
+.tut-body { font-size: 13.5px; line-height: 1.75; color: var(--text); min-height: 120px; }
+.tut-body p { margin-bottom: 10px; }
+.tut-body b { color: var(--cyan); }
+.tut-demo {
+  border-left: 3px solid var(--cyan-dim); background: rgba(77, 216, 255, 0.05);
+  padding: 10px 14px; margin: 10px 0; font-family: var(--mono); font-size: 12.5px; line-height: 2;
+}
+.tut-out { font-family: var(--mono); font-size: 13px; color: var(--yellow); min-height: 22px; margin-top: 8px; }
+.tut-out b { color: var(--cyan); }
+.tut-nav { display: flex; gap: 10px; justify-content: center; }
+.tut-nav #tut-next { min-width: 130px; }
+
 /* ---------- Toasts ---------- */
 .toast-zone {
   position: fixed; top: 18px; left: 50%; transform: translateX(-50%);

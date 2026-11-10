@@ -85,6 +85,8 @@
 
     $('q-hint').addEventListener('click', () => ui().onHint());
     $('q-giveup').addEventListener('click', () => ui().onGiveUp());
+    $('tut-next').addEventListener('click', () => { window.CW.audio.ui.click(); ui().tutorialNext(); });
+    $('tut-prev').addEventListener('click', () => { window.CW.audio.ui.back(); ui().tutorialPrev(); });
 
     // "Continue" only matters with existing progress
     const hasProgress = save.unlockedStage > 1 || save.xp > 0 || save.stats.wins > 0;
@@ -100,7 +102,7 @@
   let howtoClose = null;
   function openHowto(onClose) {
     howtoClose = onClose || null;
-    $('modal-howto').hidden = false;
+    ui().openTutorial();
   }
 
   function goMap() {

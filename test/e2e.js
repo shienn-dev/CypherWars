@@ -473,14 +473,53 @@ async function runG() {
   win.close();
 }
 
+/* ================= Run H: interactive tutorial ================= */
+async function runH() {
+  console.log('\n== Run H: interactive tutorial ==');
+  const { dom, pageErrors } = await boot();   // fresh save → intro tutorial on start
+  const win = dom.window;
+  const $ = id => doc(dom).getElementById(id);
+
+  $('btn-start').click();
+  assert(!$('modal-howto').hidden, 'tutorial opens on first start');
+  assert(doc(dom).querySelectorAll('#tut-progress .tut-dot').length === 4, '4 tutorial steps');
+  assert($('tut-prev').disabled, 'prev disabled on first step');
+  assert($('tut-title').textContent === 'MISI', 'first step is MISI');
+
+  $('tut-next').click();
+  assert($('tut-title').textContent === 'KONSEP', 'advances to KONSEP');
+  $('tut-s1').click();
+  assert($('tut-out').textContent.includes('4'), 'interactive g(2) = 4');
+  assert(!$('tut-s2').disabled, 'second reveal button enabled');
+  $('tut-s2').click();
+  assert($('tut-out').textContent.includes('9'), 'interactive composition = 9');
+
+  $('tut-next').click();
+  assert($('tut-title').textContent === 'COBA SENDIRI', 'advances to practice step');
+  const opts = [...doc(dom).querySelectorAll('#tut-options .q-opt')];
+  assert(opts.length === 4, 'tutorial question renders 4 options');
+  opts[0].click();
+  assert(!$('tut-fb').hidden, 'tutorial feedback appears after answering');
+
+  $('tut-next').click();
+  assert($('tut-title').textContent.includes('BERTARUNG'), 'advances to battle step');
+  $('tut-next').click();   // Mulai Misi
+  await sleep(80);
+  assert($('modal-howto').hidden, 'tutorial closes on finish');
+  assert(screenVisible(dom, 'screen-map'), 'tutorial finish goes to map');
+
+  assert(pageErrors.length === 0, 'no uncaught page errors in run H' + (pageErrors[0] ? ': ' + pageErrors[0] : ''));
+  win.close();
+}
+
 /* ================= runner ================= */
 (async () => {
   console.log('CIPHER WARS E2E (jsdom) — target ' + BASE);
-  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE, f: runF, g: runG };
+  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE, f: runF, g: runG, h: runH };
   const only = process.argv[2];
   try {
     if (only && runs[only]) await runs[only]();
-    else { await runA(); await runB(); await runC(); await runD(); await runE(); await runF(); await runG(); }
+    else { await runA(); await runB(); await runC(); await runD(); await runE(); await runF(); await runG(); await runH(); }
   } catch (e) {
     failures++;
     console.error('\nFATAL: ' + ((e && e.stack) || e));

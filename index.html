@@ -33,19 +33,17 @@
     </div>
   </section>
 
-  <!-- ============ HOWTO MODAL ============ -->
+  <!-- ============ TUTORIAL MODAL ============ -->
   <div class="modal" id="modal-howto" hidden>
-    <div class="modal-box">
-      <h2>CARA BERMAIN</h2>
-      <div class="howto-grid">
-        <div class="howto-item"><span class="howto-num">1</span><p><b>Pilih aksi</b> — serang, bertahan, atau gunakan kemampuan. Setiap aksi (kecuali Akhiri Giliran) memicu <b>tantangan dekripsi</b>.</p></div>
-        <div class="howto-item"><span class="howto-num">2</span><p><b>Jawab dengan benar</b> sebelum waktu habis — aksi dieksekusi, combo naik, kamu dapat energi.</p></div>
-        <div class="howto-item"><span class="howto-num">3</span><p><b>Jawab salah / waktu habis</b> — aksi gagal dan musuh langsung membalas. Combo patah.</p></div>
-        <div class="howto-item"><span class="howto-num">4</span><p><b>Baca telegraf musuh</b> — ikon di atas musuh menunjukkan aksi berikutnya. Ultimate bisa dibatalkan dengan <b>Interupsi</b>.</p></div>
-        <div class="howto-item"><span class="howto-num">5</span><p><b>Kelola energi</b> — tiap giliran +1 energi. Kemampuan kuat butuh energi besar. Combo x3 / x5 memberi bonus energi.</p></div>
-        <div class="howto-item"><span class="howto-num">6</span><p><b>Menang = XP</b> — naik level untuk membuka kemampuan baru dan menguatkan HP. Taklukkan 10 stage!</p></div>
+    <div class="modal-box tutorial-box">
+      <div class="tut-progress" id="tut-progress"></div>
+      <h2 id="tut-title">MISI</h2>
+      <div class="tut-body" id="tut-body"></div>
+      <div class="modal-actions tut-nav">
+        <button class="btn btn-ghost btn-sm" id="tut-prev">◀ Kembali</button>
+        <button class="btn btn-primary" id="tut-next">Lanjut ▶</button>
+        <button class="btn btn-ghost btn-sm" id="btn-howto-close">Lewati</button>
       </div>
-      <div class="modal-actions"><button class="btn btn-primary" id="btn-howto-close">Mengerti</button></div>
     </div>
   </div>
 
