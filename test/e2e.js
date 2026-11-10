@@ -419,14 +419,68 @@ async function runF() {
   win.close();
 }
 
+/* ================= Run G: practice mode + materi ================= */
+async function runG() {
+  console.log('\n== Run G: Latihan Bebas + Materi ==');
+  const { dom, pageErrors } = await boot({ save: seedSave({ level: 3, seenIntro: true }) });
+  const win = dom.window;
+
+  doc(dom).getElementById('btn-continue').click();
+  await sleep(80);
+  doc(dom).getElementById('btn-practice').click();
+  await sleep(80);
+  assert(screenVisible(dom, 'screen-practice'), 'practice screen opens');
+  assert(doc(dom).querySelectorAll('#practice-tiers .tier-btn').length === 5, '5 tier buttons');
+  assert(doc(dom).querySelectorAll('#practice-options .q-opt').length === 4, 'practice shows 4 options');
+  const prompt1 = doc(dom).getElementById('practice-prompt').textContent;
+  assert(prompt1.trim().length > 0, 'practice prompt rendered');
+
+  // pick TIER 4 and verify a new question is generated
+  doc(dom).querySelectorAll('#practice-tiers .tier-btn')[3].click();
+  await sleep(40);
+  assert(doc(dom).querySelectorAll('#practice-tiers .tier-btn')[3].classList.contains('active'), 'tier 4 becomes active');
+
+  // answer (click any option) → feedback + reasoning revealed
+  doc(dom).querySelectorAll('#practice-options .q-opt')[0].click();
+  await sleep(40);
+  assert(!doc(dom).getElementById('practice-feedback').hidden, 'practice feedback shown');
+  assert(!doc(dom).getElementById('practice-steps').hidden, 'steps revealed after answering');
+  assert([...doc(dom).querySelectorAll('#practice-options .q-opt')].every(b => b.disabled), 'options locked after answer');
+
+  // next question resets state
+  doc(dom).getElementById('btn-practice-next').click();
+  await sleep(40);
+  assert(doc(dom).getElementById('practice-feedback').hidden, 'feedback cleared on new question');
+  assert(doc(dom).getElementById('practice-steps').hidden, 'steps hidden on new question');
+  assert([...doc(dom).querySelectorAll('#practice-options .q-opt')].every(b => !b.disabled), 'options re-enabled on new question');
+
+  // steps button reveals before answering
+  doc(dom).getElementById('btn-practice-steps').click();
+  await sleep(30);
+  assert(!doc(dom).getElementById('practice-steps').hidden, 'Buka Langkah reveals steps');
+
+  doc(dom).getElementById('btn-practice-back').click();
+  await sleep(60);
+  assert(screenVisible(dom, 'screen-map'), 'practice back returns to map');
+
+  // materi in codex
+  doc(dom).getElementById('btn-codex').click();
+  await sleep(60);
+  const materi = doc(dom).querySelector('.materi');
+  assert(!!materi && materi.textContent.includes('(f ∘ g)(x)'), 'codex shows composition materi');
+
+  assert(pageErrors.length === 0, 'no uncaught page errors in run G' + (pageErrors[0] ? ': ' + pageErrors[0] : ''));
+  win.close();
+}
+
 /* ================= runner ================= */
 (async () => {
   console.log('CIPHER WARS E2E (jsdom) — target ' + BASE);
-  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE, f: runF };
+  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE, f: runF, g: runG };
   const only = process.argv[2];
   try {
     if (only && runs[only]) await runs[only]();
-    else { await runA(); await runB(); await runC(); await runD(); await runE(); await runF(); }
+    else { await runA(); await runB(); await runC(); await runD(); await runE(); await runF(); await runG(); }
   } catch (e) {
     failures++;
     console.error('\nFATAL: ' + ((e && e.stack) || e));

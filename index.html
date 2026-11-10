@@ -60,6 +60,7 @@
         </div>
       </div>
       <div class="hud-right">
+        <button class="btn btn-ghost btn-sm" id="btn-practice">Latihan Bebas</button>
         <button class="btn btn-ghost btn-sm" id="btn-codex">Kamus Kode</button>
         <button class="btn btn-ghost btn-sm" id="btn-sound">🔊</button>
         <button class="btn btn-ghost btn-sm" id="btn-reset">Reset</button>
@@ -83,6 +84,48 @@
       <div class="ability-list" id="codex-abilities"></div>
       <h3 class="codex-title">ARSIP GUARDIAN</h3>
       <div class="bestiary-grid" id="codex-bestiary"></div>
+
+      <h3 class="codex-title">MATERI: KOMPOSISI FUNGSI</h3>
+      <div class="materi">
+        <p><b>(f ∘ g)(x) = f(g(x))</b> — artinya: hitung dulu <b>g(x)</b>, lalu masukkan hasilnya ke <b>f</b>. Urutan dibaca dari <b>dalam ke luar</b>.</p>
+        <div class="materi-box">
+          <span class="materi-step">Contoh</span>
+          <p>f(x) = 2x + 1, g(x) = x². Maka (f ∘ g)(3):</p>
+          <p>(1) g(3) = 3² = 9 &nbsp;→&nbsp; (2) f(9) = 2·9 + 1 = 19.</p>
+          <p>Jadi (f ∘ g)(3) = 19.</p>
+        </div>
+        <p class="materi-warn"><b>Kesalahan umum:</b></p>
+        <ul class="materi-list">
+          <li>Membalik urutan: (f ∘ g)(x) <b>bukan</b> g(f(x)).</li>
+          <li>Mengalikan fungsi: (f ∘ g)(x) <b>bukan</b> f(x) · g(x).</li>
+          <li>Lupa substitusi: semua <b>x</b> pada f harus diganti <b>seluruh g(x)</b>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRACTICE (LATIHAN BEBAS) ============ -->
+  <section class="screen" id="screen-practice">
+    <header class="hud-top">
+      <div class="hud-left"><div class="hud-brand">LABORATORIUM LATIHAN</div></div>
+      <div class="hud-right"><button class="btn btn-ghost btn-sm" id="btn-practice-back">◀ Kembali</button></div>
+    </header>
+    <div class="practice-wrap">
+      <div class="practice-head">
+        <h2 class="map-title">LATIHAN BEBAS</h2>
+        <p class="map-sub">Tanpa timer, tanpa musuh. Pilih tingkat kesulitan dan ulangi sepuasnya.</p>
+        <div class="practice-tiers" id="practice-tiers"></div>
+      </div>
+      <div class="practice-card">
+        <div class="practice-prompt" id="practice-prompt"></div>
+        <div class="practice-options q-options" id="practice-options"></div>
+        <div class="practice-steps q-steps" id="practice-steps" hidden></div>
+        <div class="practice-feedback q-feedback" id="practice-feedback" hidden></div>
+        <div class="practice-actions">
+          <button class="btn btn-ghost btn-sm" id="btn-practice-steps">💡 Buka Langkah</button>
+          <button class="btn btn-primary btn-sm" id="btn-practice-next">Soal Baru ▶</button>
+        </div>
+      </div>
     </div>
   </section>
 

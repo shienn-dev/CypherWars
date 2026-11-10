@@ -531,6 +531,30 @@ body.flash-red::after {
 .struct-chip b { color: var(--yellow); }
 .struct-icon svg { width: 13px; height: 13px; display: block; vertical-align: middle; }
 
+/* ---------- Materi (codex) ---------- */
+.materi { border: 1px solid var(--line); background: var(--panel); padding: 16px; font-size: 13px; line-height: 1.7; color: var(--text); }
+.materi b { color: var(--cyan); }
+.materi-box { border-left: 3px solid var(--cyan-dim); background: rgba(77, 216, 255, 0.05); padding: 10px 14px; margin: 12px 0; }
+.materi-step { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; color: var(--yellow); }
+.materi-warn { margin-top: 6px; }
+.materi-list { margin: 4px 0 0 18px; }
+.materi-list li { font-size: 12.5px; line-height: 1.6; color: var(--text-dim); }
+
+/* ---------- Practice (Latihan Bebas) ---------- */
+.practice-wrap { width: min(760px, 94vw); margin: 0 auto; padding: 18px 0 40px; }
+.practice-head { margin-bottom: 14px; }
+.practice-tiers { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.tier-btn {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; cursor: pointer;
+  padding: 6px 14px; color: var(--text-dim); background: var(--panel);
+  border: 1px solid var(--line); transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.tier-btn:hover { color: var(--cyan); border-color: var(--line-strong); }
+.tier-btn.active { color: #041018; background: var(--cyan); border-color: var(--cyan); font-weight: 700; }
+.practice-card { border: 1px solid var(--line-strong); background: var(--panel2); padding: 20px; }
+.practice-prompt { font-family: var(--mono); font-size: 15px; line-height: 1.8; color: var(--text); white-space: pre-wrap; margin-bottom: 16px; }
+.practice-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
 /* ---------- Toasts ---------- */
 .toast-zone {
   position: fixed; top: 18px; left: 50%; transform: translateX(-50%);

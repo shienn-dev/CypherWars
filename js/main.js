@@ -42,6 +42,15 @@
       ui().showScreen('screen-codex');
     });
     $('btn-codex-back').addEventListener('click', () => { window.CW.audio.ui.back(); goMap(); });
+
+    $('btn-practice').addEventListener('click', () => {
+      window.CW.audio.ui.click();
+      ui().openPractice(save);
+      ui().showScreen('screen-practice');
+    });
+    $('btn-practice-back').addEventListener('click', () => { window.CW.audio.ui.back(); goMap(); });
+    $('btn-practice-steps').addEventListener('click', () => ui().practiceShowSteps());
+    $('btn-practice-next').addEventListener('click', () => ui().practiceNext());
     $('btn-sound').addEventListener('click', () => {
       save.sound = !save.sound;
       window.CW.audio.enabled = save.sound;

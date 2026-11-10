@@ -468,6 +468,77 @@
     answer(null, null, true);
   };
 
+  /* ================= Practice mode (Latihan Bebas) ================= */
+  let practiceTier = 1;
+  let practiceQ = null;
+
+  U.openPractice = save => {
+    practiceTier = Math.min(5, Math.max(1, (save && save.level) || 1));
+    renderPracticeTiers();
+    U.practiceNew();
+  };
+
+  function renderPracticeTiers() {
+    const box = $('practice-tiers');
+    box.innerHTML = '';
+    for (let t = 1; t <= 5; t++) {
+      const b = el('button', 'tier-btn' + (t === practiceTier ? ' active' : ''), 'TIER ' + t);
+      b.addEventListener('click', () => {
+        CW.audio.ui.click();
+        practiceTier = t;
+        renderPracticeTiers();
+        U.practiceNew();
+      });
+      box.appendChild(b);
+    }
+  }
+
+  U.practiceNew = () => {
+    practiceQ = CW.math.generate(practiceTier);
+    $('practice-prompt').textContent = practiceQ.prompt;
+    const opts = $('practice-options');
+    opts.innerHTML = '';
+    practiceQ.options.forEach(o => {
+      const btn = el('button', 'q-opt', String(o));
+      btn.addEventListener('click', () => practiceAnswer(o, btn));
+      opts.appendChild(btn);
+    });
+    const steps = $('practice-steps');
+    steps.textContent = practiceQ.steps.join('\n');
+    steps.hidden = true;
+    $('practice-feedback').hidden = true;
+    $('btn-practice-steps').disabled = false;
+  };
+
+  function practiceAnswer(choice, btn) {
+    const correct = CW.math.check(practiceQ, choice);
+    document.querySelectorAll('#practice-options .q-opt').forEach(b => {
+      b.disabled = true;
+      if (CW.math.check(practiceQ, b.textContent)) b.classList.add('correct');
+      else if (b === btn) b.classList.add('wrong');
+      else b.classList.add('dimmed');
+    });
+    const fb = $('practice-feedback');
+    fb.hidden = false;
+    if (correct) {
+      fb.className = 'q-feedback good';
+      fb.textContent = '\u2713 Benar!';
+      CW.audio.fx.correct();
+    } else {
+      fb.className = 'q-feedback bad';
+      fb.textContent = '\u2717 Belum tepat. Jawaban benar: ' + practiceQ.answer;
+      CW.audio.fx.wrong();
+    }
+    $('practice-steps').hidden = false;   // always reveal the reasoning
+    $('btn-practice-steps').disabled = true;
+  }
+
+  U.practiceShowSteps = () => {
+    CW.audio.ui.click();
+    $('practice-steps').hidden = false;
+  };
+  U.practiceNext = () => { CW.audio.ui.click(); U.practiceNew(); };
+
   /* ================= Result modal ================= */
   U.showResult = html => {
     $('result-box').innerHTML = html;
