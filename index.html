@@ -94,6 +94,7 @@
         <span class="bh-turn" id="bh-turn">GILIRAN 1</span>
       </div>
       <div class="bh-right">
+        <button class="btn btn-ghost btn-sm" id="btn-build">🏗 Benteng</button>
         <button class="btn btn-ghost btn-sm" id="btn-flee">Kabur</button>
       </div>
     </header>
@@ -132,6 +133,7 @@
         <div class="combo-meter" id="combo-meter">COMBO x0</div>
       </div>
       <div class="shield-bar" id="player-shield"></div>
+      <div class="structures" id="structures"></div>
 
       <div class="actions" id="actions"></div>
       <div class="battle-log" id="battle-log"></div>
@@ -157,11 +159,23 @@
     </div>
   </div>
 
+  <!-- ============ BUILD (BENTENG) MODAL ============ -->
+  <div class="modal" id="modal-build" hidden>
+    <div class="build-box">
+      <div class="build-head">
+        <span class="q-tag">PROTOKOL BENTENG</span>
+        <span class="build-shards">⬡ <b id="build-shards">0</b> SHARD</span>
+      </div>
+      <p class="build-sub">Belanja DATA SHARD untuk membangun pertahanan. Setiap pembangunan butuh satu dekripsi berhasil.</p>
+      <div class="build-list" id="build-list"></div>
+      <div class="modal-actions"><button class="btn btn-primary" id="btn-build-close">Tutup</button></div>
+    </div>
+  </div>
+
   <!-- ============ RESULT OVERLAY ============ -->
   <div class="modal" id="modal-result" hidden>
     <div class="result-box" id="result-box"></div>
   </div>
-
   <!-- ============ TOASTS ============ -->
   <div class="toast-zone" id="toast-zone"></div>
 

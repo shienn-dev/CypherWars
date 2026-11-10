@@ -207,7 +207,27 @@
     const sm = $('shard-meter');
     if (sm) sm.textContent = '\u2B21 ' + p.shards + ' SHARD';
     $('bh-turn').textContent = 'GILIRAN ' + B.turn;
+    U.renderStructures();
     updateEnemyIntent();
+  };
+
+  U.renderStructures = () => {
+    const box = $('structures');
+    if (!box) return;
+    box.innerHTML = '';
+    const built = CW.data.structures.filter(def => B.structures[def.id] > 0);
+    if (!built.length) {
+      box.innerHTML = '<span class="struct-empty">\uD83C\uDFD7 Belum ada struktur \u2014 buka Benteng untuk membangun</span>';
+      return;
+    }
+    built.forEach(def => {
+      const lvl = B.structures[def.id];
+      const chip = el('span', 'struct-chip');
+      chip.title = def.desc;
+      chip.innerHTML = '<span class="struct-icon">' + (U.icons[def.icon] || '') + '</span>' +
+        def.name + ' <b>LV' + lvl + '</b>';
+      box.appendChild(chip);
+    });
   };
 
   function appendLog(l) {
@@ -252,6 +272,31 @@
     if (ab.type === 'shield' || ab.type === 'heal') return 'def-btn';
     return 'util-btn';
   }
+
+  /* ================= Build (Benteng) modal ================= */
+  U.openBuild = () => { U.renderBuildList(); $('modal-build').hidden = false; };
+  U.closeBuild = () => { $('modal-build').hidden = true; };
+
+  U.renderBuildList = () => {
+    const list = $('build-list');
+    list.innerHTML = '';
+    $('build-shards').textContent = B.player.shards;
+    CW.battle.buildInfo(B).forEach(info => {
+      const def = info.def;
+      const row = el('div', 'build-item' + (info.maxed ? ' maxed' : ''));
+      row.innerHTML =
+        '<div class="build-icon">' + (U.icons[def.icon] || '') + '</div>' +
+        '<div class="build-info"><b>' + def.name + '</b> ' +
+        '<span class="build-lvl">LV ' + info.level + '/' + info.max + '</span>' +
+        '<p>' + def.desc + '</p></div>';
+      const btn = el('button', 'btn btn-sm ' + (!info.maxed && info.affordable ? 'btn-primary' : 'btn-ghost'));
+      if (info.maxed) { btn.textContent = 'MAX'; btn.disabled = true; }
+      else { btn.textContent = '\u2B21 ' + info.cost; btn.disabled = !info.affordable; }
+      btn.addEventListener('click', () => flowApi.onBuild(def));
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+  };
 
   /* ================= Floating FX ================= */
   function floatText(target, text, color, small) {
@@ -346,6 +391,9 @@
     $('q-feedback').hidden = true;
     $('q-hint').disabled = questionData.analyze;
     $('q-giveup').disabled = false;
+    $('q-giveup').textContent = (questionData.purpose && questionData.purpose.type === 'build')
+      ? 'Batalkan'
+      : 'Menyerah (musuh membalas)';
     $('modal-question').hidden = false;
     startTimer();
   };

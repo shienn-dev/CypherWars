@@ -376,14 +376,57 @@ async function runE() {
   win.close();
 }
 
+/* ================= Run F: build structures (Benteng) ================= */
+async function runF() {
+  console.log('\n== Run F: build structures via decryption ==');
+  const { dom, pageErrors } = await boot({ save: seedSave({ level: 5, seenIntro: true }) });
+  const win = dom.window;
+
+  doc(dom).getElementById('btn-continue').click();
+  await sleep(80);
+  [...doc(dom).querySelectorAll('#stage-grid .stage-card')][0].click();
+  await sleep(140);
+  const b = win.CW.main.battle;
+
+  b.player.shards = 50;
+  win.CW.ui.updateHUD();
+  assert(doc(dom).getElementById('shard-meter').textContent.includes('50'), 'shard meter shows 50');
+
+  doc(dom).getElementById('btn-build').click();
+  await sleep(60);
+  assert(!doc(dom).getElementById('modal-build').hidden, 'build modal opens');
+  const rows = [...doc(dom).querySelectorAll('#build-list .build-item')];
+  assert(rows.length === 4, 'build modal lists 4 structures');
+
+  const turnBefore = b.turn;
+  rows[0].querySelector('button').click();
+  await waitFor(() => !doc(dom).getElementById('modal-question').hidden, 'build question opens');
+  assert(doc(dom).getElementById('q-tag').textContent.includes('BANGUN'), 'build question tagged');
+  await answerQuestion(dom, 'correct');
+  await waitFor(() => doc(dom).getElementById('modal-question').hidden, 'build question closes');
+  await sleep(200);
+
+  assert(b.structures.firewall === 1, 'firewall built to level 1');
+  assert(b.player.shards < 50, 'shards spent on successful build');
+  assert(b.turn === turnBefore, 'building does not cost the turn (no enemy reprisal)');
+  assert(doc(dom).getElementById('structures').textContent.includes('Firewall'), 'structure strip shows Firewall');
+
+  doc(dom).getElementById('btn-build-close').click();
+  await sleep(50);
+  assert(doc(dom).getElementById('modal-build').hidden, 'build modal closes');
+
+  assert(pageErrors.length === 0, 'no uncaught page errors in run F' + (pageErrors[0] ? ': ' + pageErrors[0] : ''));
+  win.close();
+}
+
 /* ================= runner ================= */
 (async () => {
   console.log('CIPHER WARS E2E (jsdom) — target ' + BASE);
-  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE };
+  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE, f: runF };
   const only = process.argv[2];
   try {
     if (only && runs[only]) await runs[only]();
-    else { await runA(); await runB(); await runC(); await runD(); await runE(); }
+    else { await runA(); await runB(); await runC(); await runD(); await runE(); await runF(); }
   } catch (e) {
     failures++;
     console.error('\nFATAL: ' + ((e && e.stack) || e));

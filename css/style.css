@@ -492,6 +492,45 @@ body.flash-red::after {
 .modal-actions { text-align: center; margin-top: 6px; }
 .modal h2 { font-family: var(--mono); letter-spacing: 0.25em; color: var(--cyan); font-size: 18px; }
 
+/* ---------- Build (Benteng) modal ---------- */
+.build-box {
+  width: min(620px, 96vw);
+  border: 1px solid var(--line-strong); background: var(--panel2);
+  padding: 22px;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+}
+.build-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.build-shards { font-family: var(--mono); color: var(--cyan); letter-spacing: 0.1em; }
+.build-shards b { color: var(--yellow); }
+.build-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.6; }
+.build-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.build-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border: 1px solid var(--line); background: var(--panel);
+}
+.build-item.maxed { opacity: 0.7; }
+.build-icon {
+  width: 38px; height: 38px; flex: none; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-strong); color: var(--cyan); background: rgba(77, 216, 255, 0.07);
+}
+.build-icon svg { width: 22px; height: 22px; }
+.build-info { flex: 1; min-width: 0; }
+.build-info b { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; }
+.build-lvl { font-family: var(--mono); font-size: 11px; color: var(--yellow); margin-left: 6px; }
+.build-info p { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin-top: 2px; }
+
+/* ---------- Base structures strip ---------- */
+.structures { display: flex; flex-wrap: wrap; gap: 8px; min-height: 20px; }
+.struct-empty { font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; }
+.struct-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  color: var(--cyan); border: 1px solid var(--line-strong);
+  background: rgba(77, 216, 255, 0.06); padding: 3px 8px;
+}
+.struct-chip b { color: var(--yellow); }
+.struct-icon svg { width: 13px; height: 13px; display: block; vertical-align: middle; }
+
 /* ---------- Toasts ---------- */
 .toast-zone {
   position: fixed; top: 18px; left: 50%; transform: translateX(-50%);

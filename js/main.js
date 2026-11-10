@@ -64,6 +64,16 @@
       }
     });
 
+    $('btn-build').addEventListener('click', () => {
+      if (busy || !B || B.phase !== 'player') return;
+      window.CW.audio.ui.click();
+      ui().openBuild();
+    });
+    $('btn-build-close').addEventListener('click', () => {
+      window.CW.audio.ui.back();
+      ui().closeBuild();
+    });
+
     $('q-hint').addEventListener('click', () => ui().onHint());
     $('q-giveup').addEventListener('click', () => ui().onGiveUp());
 
@@ -125,10 +135,42 @@
       window.CW.audio.ui.click();
       window.CW.battle.log(B, 'sys', 'Operative menunggu dan mengamati\u2026');
       runEnemyTurn();
+    },
+    onBuild(def) {
+      if (busy || !B || B.phase !== 'player') return;
+      if (!window.CW.battle.canBuild(B, def)) {
+        ui().toast('Shard tidak cukup atau struktur sudah MAX.', 'warn');
+        return;
+      }
+      busy = true;
+      window.CW.audio.ui.click();
+      const qd = window.CW.battle.makeQuestion(B, save, {
+        purpose: { type: 'build', name: 'Bangun ' + def.name, def }
+      });
+      ui().openQuestion(qd, correct => resolveBuild(def, correct));
     }
   };
   window.CW.ui.flow = flow;   // exposed for testing hooks
   window.CW.ui.onStageSelect = stage => { if (!busy) startStage(stage); };
+
+  /* Construction resolved: shards only spent on a successful decrypt. */
+  function resolveBuild(def, correct) {
+    B.question = null;
+    if (correct) {
+      if (window.CW.battle.applyBuild(B, def)) {
+        window.CW.audio.fx.shield();
+        ui().toast('\uD83C\uDFD7 ' + def.name + ' dibangun!', 'gold');
+      }
+    } else {
+      window.CW.audio.fx.wrong();
+      ui().toast('Konstruksi gagal \u2014 shard tidak terpakai.', 'warn');
+    }
+    ui().refreshLog();
+    ui().updateHUD();
+    ui().renderStructures();
+    ui().renderBuildList();
+    busy = false;
+  }
 
   /* ================= Question resolution ================= */
   async function resolveAnswer(correct, choice, timedOut) {
