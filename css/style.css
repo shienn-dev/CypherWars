@@ -28,9 +28,10 @@ body {
   color: var(--text);
   font-family: var(--font);
   overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
+  user-select: text;
+  -webkit-user-select: text;
 }
+button, .btn, .act-btn, .q-opt, .tier-btn, .stage-card { user-select: none; -webkit-user-select: none; }
 
 /* ---------- Ambient background ---------- */
 .bg-grid {

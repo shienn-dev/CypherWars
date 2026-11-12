@@ -69,7 +69,7 @@
     CW.data.stages.forEach(st => {
       const enemy = CW.data.enemies[st.enemy];
       const unlocked = st.id <= save.unlockedStage;
-      const done = st.id < save.unlockedStage;
+      const done = st.id < save.unlockedStage || (st.id === 10 && !!save.clearedFinal);
       const isBoss = !!enemy.boss;
       const card = el('div', 'stage-card' + (unlocked ? '' : ' locked') + (done ? ' done' : '') + (isBoss && unlocked ? ' boss-stage' : ''));
       card.innerHTML =
@@ -125,8 +125,9 @@
   let flowApi = null;     // callbacks provided by main.js
   let timerInt = null;
   let logRendered = 0;    // number of battle-log entries already in the DOM
+  let actionsLocked = false;   // true while an animation/queue is running
 
-  U.bindBattle = (battle, save, flow) => { B = battle; saveRef = save; flowApi = flow; };
+  U.bindBattle = (battle, save, flow) => { B = battle; saveRef = save; flowApi = flow; actionsLocked = false; };
 
   U.renderBattle = () => {
     const w = B.waves.length > 1 ? ' \u00B7 WAVE ' + (B.waveIndex + 1) + '/' + B.waves.length : '';
@@ -251,7 +252,7 @@
       const btn = el('button', 'act-btn ' + btnClass(ab));
       const affordable = p.energy >= ab.cost;
       const isInterrupt = ab.type === 'interrupt';
-      btn.disabled = !affordable || (isInterrupt && !B.enemy.chargingUlt);
+      btn.disabled = actionsLocked || !affordable || (isInterrupt && !B.enemy.chargingUlt);
       btn.innerHTML =
         '<span class="act-icon">' + (U.icons[ab.icon] || '') + '</span>' +
         '<span class="act-cost">' + (ab.cost > 0 ? ab.cost + '\u26A1' : 'FREE') + '</span>' +
@@ -263,8 +264,15 @@
 
     const end = el('button', 'act-btn end-btn',
       '<span class="act-icon">' + U.icons.flag + '</span>Akhiri Giliran');
+    end.disabled = actionsLocked;
     end.addEventListener('click', () => flowApi.onEndTurn());
     box.appendChild(end);
+  };
+
+  /* Lock/unlock the action bar while an action is resolving. */
+  U.setActionsLocked = v => {
+    actionsLocked = !!v;
+    if (B) U.renderActions();
   };
 
   function btnClass(ab) {

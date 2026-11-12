@@ -12,6 +12,7 @@
   let save = null;
   let B = null;          // active battle
   let busy = false;      // input lock during animations
+  function setBusy(v) { busy = v; window.CW.ui.setActionsLocked(v); }
 
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -106,8 +107,8 @@
   }
 
   function goMap() {
-    busy = false;
     B = null;
+    setBusy(false);
     $('modal-result').hidden = true;
     $('modal-question').hidden = true;
     ui().renderMap(save);
@@ -116,6 +117,7 @@
 
   /* ================= Stage select / battle start ================= */
   function startStage(stage) {
+    busy = false;                       // clear lock from a previous battle
     B = window.CW.battle.create(stage, save);
     ui().bindBattle(B, save, flow);
     ui().showScreen('screen-battle');
@@ -130,7 +132,7 @@
     onAction(ab) {
       if (busy || !B || B.phase !== 'player') return;
       if (B.player.energy < ab.cost) return;
-      busy = true;
+      setBusy(true);
       window.CW.audio.ui.click();
       if (ab.cost > 0) window.CW.battle.spendEnergy(B, ab.cost);
       ui().updateHUD();
@@ -142,7 +144,7 @@
     },
     onEndTurn() {
       if (busy || !B || B.phase !== 'player') return;
-      busy = true;
+      setBusy(true);
       window.CW.audio.ui.click();
       window.CW.battle.log(B, 'sys', 'Operative menunggu dan mengamati\u2026');
       runEnemyTurn();
@@ -153,7 +155,7 @@
         ui().toast('Shard tidak cukup atau struktur sudah MAX.', 'warn');
         return;
       }
-      busy = true;
+      setBusy(true);
       window.CW.audio.ui.click();
       const qd = window.CW.battle.makeQuestion(B, save, {
         purpose: { type: 'build', name: 'Bangun ' + def.name, def }
@@ -168,11 +170,13 @@
   function resolveBuild(def, correct) {
     B.question = null;
     if (correct) {
+      save.stats.correct++;
       if (window.CW.battle.applyBuild(B, def)) {
         window.CW.audio.fx.shield();
         ui().toast('\uD83C\uDFD7 ' + def.name + ' dibangun!', 'gold');
       }
     } else {
+      save.stats.wrong++;
       window.CW.audio.fx.wrong();
       ui().toast('Konstruksi gagal \u2014 shard tidak terpakai.', 'warn');
     }
@@ -180,7 +184,7 @@
     ui().updateHUD();
     ui().renderStructures();
     ui().renderBuildList();
-    busy = false;
+    setBusy(false);
   }
 
   /* ================= Question resolution ================= */
@@ -189,10 +193,11 @@
     ui().refreshLog();
     ui().updateHUD();
     await animateEvents(events, correct);
-    if (window.CW.battle.playerDead(B)) return defeat();
 
+    // Enemy death takes precedence: a mutual kill (e.g. reflected damage) still clears.
     const down = handleEnemyDown();
     if (down === 'win') return;
+    if (window.CW.battle.playerDead(B)) return defeat();
     if (down === 'wave') return nextTurn();   // new wave spawns; let player act first
 
     if (correct) await runEnemyTurn();
@@ -218,9 +223,9 @@
     const events = window.CW.battle.endPlayerPhase(B);
     ui().refreshLog();
     await animateEvents(events, null);
-    if (window.CW.battle.playerDead(B)) return defeat();
     const down = handleEnemyDown();
     if (down === 'win') return;
+    if (window.CW.battle.playerDead(B)) return defeat();
     await nextTurn();
   }
 
@@ -232,8 +237,7 @@
     const down = handleEnemyDown();   // a Turret shot may have finished a wave
     if (down === 'win') return;
     ui().updateHUD();
-    ui().renderActions();
-    busy = false;
+    setBusy(false);
   }
 
   /* ================= Event animation ================= */
@@ -384,7 +388,7 @@
   }
 
   function victory() {
-    busy = true;
+    setBusy(true);
     B.phase = 'over';
     fx().enemyDeath();
     window.CW.audio.fanfare();
@@ -396,9 +400,10 @@
     const lvl = window.CW.save.grantXp(save, xpGain);
     save.unlockedStage = Math.min(10, Math.max(save.unlockedStage, stage.id + 1));
     save.stats.wins++;
+    const isFinal = stage.id === 10;
+    if (isFinal) save.clearedFinal = true;
     persist();
 
-    const isFinal = stage.id === 10;
     const nextStages = data().stages.filter(s => s.id === stage.id + 1);
     const newAbilities = data().abilities.filter(a => a.unlock > oldLevel && a.unlock <= save.level);
 
@@ -437,7 +442,7 @@
   }
 
   function defeat() {
-    busy = true;
+    setBusy(true);
     B.phase = 'over';
     window.CW.audio.gameover();
     save.stats.losses++;
@@ -460,7 +465,15 @@
   }
 
   window.CW = window.CW || {};
-  window.CW.main = { boot, startStage, get battle() { return B; } };
+  window.CW.main = { boot, startStage, get battle() { return B; }, get busy() { return busy; } };
+
+  // Escape closes dismissible overlays (tutorial / build). Never the question
+  // or result modal, to avoid unintended progress loss.
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!$('modal-howto').hidden) { $('btn-howto-close').click(); return; }
+    if (!$('modal-build').hidden) { ui().closeBuild(); }
+  });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

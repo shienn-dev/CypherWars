@@ -10,14 +10,44 @@
      Run D: map boss badges (KALKULUS REX regression), codex, reset
    The correct answer is read from the live battle state
    (window.CW.main.battle) — click paths stay 100% DOM.
-   Requires the local server:  python -m http.server 8123
+   Starts its own temporary static server, so no external
+   server is required (override with E2E_URL if you have one).
    Run:  node test/e2e.js   (or: npm run e2e)
    ============================================================ */
 'use strict';
 const { JSDOM, VirtualConsole } = require('jsdom');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
-const BASE = process.env.E2E_URL || 'http://localhost:8123/';
+/* Optional override; otherwise a temporary static server is started below. */
+let BASE = process.env.E2E_URL || null;
 const SAVE_KEY = 'cipherwars_save_v1';
+
+const ROOT = path.resolve(__dirname, '..');
+const MIME = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json'
+};
+
+/* Tiny static file server so `npm test` is self-contained (no python needed). */
+function startStatic() {
+  return new Promise((resolve, reject) => {
+    const srv = http.createServer((req, res) => {
+      let p = decodeURIComponent(req.url.split('?')[0]);
+      if (p === '/') p = '/index.html';
+      const file = path.join(ROOT, p);
+      if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
+      fs.readFile(file, (err, data) => {
+        if (err) { res.writeHead(404); return res.end('not found'); }
+        res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
+        res.end(data);
+      });
+    });
+    srv.on('error', reject);
+    srv.listen(0, () => resolve(srv));
+  });
+}
 
 let checks = 0, failures = 0;
 function assert(cond, msg) {
@@ -90,6 +120,7 @@ function actionButtons(dom) {
 }
 
 async function doAction(dom, name) {
+  await waitFor(() => !dom.window.CW.main.busy, 'idle before ' + name);
   const btn = actionButtons(dom).find(a => a.name === name);
   if (!btn) throw new Error('action button not found: ' + name);
   if (btn.el.disabled) throw new Error('action disabled: ' + name);
@@ -109,15 +140,16 @@ async function answerQuestion(dom, pick) {
   target.click();
 }
 
-/* Wait for the modal to close and the turn machinery to finish:
-   either the turn counter advanced or the battle is over. */
+/* Wait for the modal to close and the turn machinery to fully finish —
+   including the busy-lock dropping and the action bar re-enabling. */
 async function settle(dom, turnBefore, label) {
   await waitFor(() => doc(dom).getElementById('modal-question').hidden, 'modal closed (' + label + ')', 9000);
   await waitFor(() => {
     const b = dom.window.CW.main.battle;
     return b.phase === 'over' || b.turn > turnBefore;
   }, 'turn advanced (' + label + ')', 15000);
-  await sleep(600);   // let the busy-lock drop and actions re-render
+  await waitFor(() => dom.window.CW.main.busy === false || dom.window.CW.main.battle.phase === 'over',
+    'idle after ' + label, 15000);
 }
 
 async function battleToVictory(dom) {
@@ -206,6 +238,14 @@ async function runA() {
   await sleep(120);
   assert(win.CW.main.battle.enemy.name === 'BYTE-HYENA', 'stage 2 enemy BYTE-HYENA');
   assert(doc(dom).getElementById('bh-stage').textContent.includes('SEKTOR 2'), 'HUD shows SEKTOR 2');
+
+  // regression: actions must work again after a victory → next stage
+  const b2 = win.CW.main.battle;
+  const turnB = b2.turn;
+  await doAction(dom, 'Serang');
+  await answerQuestion(dom, 'correct');
+  await settle(dom, turnB, 'post-victory action');
+  assert(win.CW.main.battle.turn > turnB, 'actions re-enabled after next stage');
 
   doc(dom).getElementById('btn-flee').click();
   assert(screenVisible(dom, 'screen-map'), 'flee (confirm shim) returns to map');
@@ -514,6 +554,11 @@ async function runH() {
 
 /* ================= runner ================= */
 (async () => {
+  let server = null;
+  if (!BASE) {
+    server = await startStatic();
+    BASE = 'http://localhost:' + server.address().port + '/';
+  }
   console.log('CIPHER WARS E2E (jsdom) — target ' + BASE);
   const runs = { a: runA, b: runB, c: runC, d: runD, e: runE, f: runF, g: runG, h: runH };
   const only = process.argv[2];
@@ -524,6 +569,7 @@ async function runH() {
     failures++;
     console.error('\nFATAL: ' + ((e && e.stack) || e));
   }
+  if (server) server.close();
   console.log('\n' + checks + ' checks run, ' + failures + ' failures');
   process.exit(failures ? 1 : 0);
 })();

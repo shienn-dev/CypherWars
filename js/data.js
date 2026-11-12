@@ -189,7 +189,7 @@
       desc: '+1 energi ekstra setiap giliran, selama 3 giliran.', type: 'overclock', value: 3
     },
     {
-      id: 'interrupt', name: 'Interupsi', icon: 'cut', cost: 2, unlock: 6,
+      id: 'interrupt', name: 'Interupsi', icon: 'cut', cost: 2, unlock: 5,
       desc: 'Batalkan SERANGAN ULTIMATE musuh yang sedang diisi. (Pertanyaan lebih sulit.)', type: 'interrupt'
     },
     {

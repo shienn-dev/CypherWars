@@ -218,7 +218,6 @@ for (let sim = 0; sim < 200; sim++) {
       continue;
     }
     if (CW.battle.playerDead(b)) break;
-    if (correctResult(events, okRef(events))) {}
     // after player action: enemy turn then next turn
     events = CW.battle.endPlayerPhase(b);
     if (CW.battle.playerDead(b)) break;
@@ -235,8 +234,6 @@ for (let sim = 0; sim < 200; sim++) {
   assert(b.player.energy >= 0 && b.player.energy <= b.player.energyMax, 'energy out of range');
   assert(b.player.combo >= 0, 'negative combo');
 }
-function okRef() { return null; }
-function correctResult() { return null; }
 
 /* ================= 4. Solve-type direct verification ================= */
 console.log('== Solve-type exact check: 1000 generations ==');
@@ -318,6 +315,36 @@ console.log('== Defense structures & mechanics ==');
   b.enemy.nextMove = { type: 'cleanse', value: 0 };
   CW.battle.endPlayerPhase(b);
   assert(b.player.shield === 0 && b.player.overclock === 0 && b.player.analyzeReady === false, 'cleanse strips shield and buffs');
+}
+
+/* ================= 7. Enemy AI robustness ================= */
+console.log('== Enemy AI always returns a valid move ==');
+{
+  const ps = { level: 10, stats: { correct: 0, wrong: 0, bestCombo: 0 } };
+  for (const key of Object.keys(CW.data.enemies)) {
+    for (const frac of [1, 0.5, 0.3, 0.1]) {
+      for (const combo of [0, 1, 3]) {
+        for (const energy of [0, 5]) {
+          const stage = { id: 1, enemy: key, tier: CW.data.enemies[key].tier, timeMod: 1, waves: [key] };
+          const b = CW.battle.create(stage, ps);
+          b.enemy.hp = Math.max(1, Math.round(b.enemy.maxHp * frac));
+          b.player.combo = combo;
+          b.player.energy = energy;
+          b.enemy.chargingUlt = null;
+          const m = CW.battle.pickEnemyMove(b);
+          assert(m && typeof m.type === 'string' && m.weight > 0,
+            'AI starved for ' + key + ' (frac ' + frac + ', combo ' + combo + ', energy ' + energy + ')');
+        }
+      }
+    }
+  }
+  // structures honor data.perLevel
+  const w = CW.battle.create({ id: 1, enemy: 'sentinel', tier: 1, timeMod: 1, waves: ['sentinel'] }, ps);
+  const fw = CW.data.structures.find(s => s.id === 'firewall');
+  w.structures.firewall = 2;
+  w.player.shield = 0;
+  CW.battle.startPlayerTurn(w);
+  assert(w.player.shield === 2 * fw.perLevel, 'firewall honors perLevel (' + w.player.shield + ')');
 }
 
 console.log('\n' + checks + ' checks run, ' + failures + ' failures');

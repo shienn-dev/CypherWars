@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CIPHER WARS — Pertempuran Kode</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='24'>🛡️</text></svg>">
@@ -34,7 +34,7 @@
   </section>
 
   <!-- ============ TUTORIAL MODAL ============ -->
-  <div class="modal" id="modal-howto" hidden>
+  <div class="modal" id="modal-howto" role="dialog" aria-modal="true" aria-label="Tutorial" hidden>
     <div class="modal-box tutorial-box">
       <div class="tut-progress" id="tut-progress"></div>
       <h2 id="tut-title">MISI</h2>
@@ -177,12 +177,12 @@
       <div class="structures" id="structures"></div>
 
       <div class="actions" id="actions"></div>
-      <div class="battle-log" id="battle-log"></div>
+      <div class="battle-log" id="battle-log" aria-live="polite" aria-label="Catatan pertarungan"></div>
     </div>
   </section>
 
   <!-- ============ QUESTION MODAL ============ -->
-  <div class="modal" id="modal-question" hidden>
+  <div class="modal" id="modal-question" role="dialog" aria-modal="true" aria-label="Tantangan dekripsi" hidden>
     <div class="q-box">
       <div class="q-head">
         <span class="q-tag" id="q-tag">DEKRIPSI DIPERLUKAN</span>
@@ -201,7 +201,7 @@
   </div>
 
   <!-- ============ BUILD (BENTENG) MODAL ============ -->
-  <div class="modal" id="modal-build" hidden>
+  <div class="modal" id="modal-build" role="dialog" aria-modal="true" aria-label="Protokol Benteng" hidden>
     <div class="build-box">
       <div class="build-head">
         <span class="q-tag">PROTOKOL BENTENG</span>
@@ -214,11 +214,11 @@
   </div>
 
   <!-- ============ RESULT OVERLAY ============ -->
-  <div class="modal" id="modal-result" hidden>
+  <div class="modal" id="modal-result" role="dialog" aria-modal="true" aria-label="Hasil pertarungan" hidden>
     <div class="result-box" id="result-box"></div>
   </div>
   <!-- ============ TOASTS ============ -->
-  <div class="toast-zone" id="toast-zone"></div>
+  <div class="toast-zone" id="toast-zone" aria-live="polite"></div>
 
 </div>
 

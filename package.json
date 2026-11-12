@@ -7,7 +7,8 @@
     "start": "python -m http.server 8123",
     "qa": "node test/qa.js",
     "e2e": "node test/e2e.js",
-    "test": "node test/qa.js && node test/e2e.js"
+    "lint": "node test/lint.js",
+    "test": "node test/lint.js && node test/qa.js && node test/e2e.js"
   },
   "devDependencies": {
     "jsdom": "^24.1.0"

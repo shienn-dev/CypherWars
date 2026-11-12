@@ -32,7 +32,7 @@
         energyMax: data().playerBase.energyMax,
         combo: 0, bestCombo: 0, shards: 0,
         poison: 0, poisonDmg: 0, slow: 0, overclock: 0,
-        analyzeReady: false, interruptReady: false
+        analyzeReady: false
       },
       turn: 1, phase: 'player',       // player | question | enemy | over
       question: null, lastResult: null, log: []
@@ -102,6 +102,27 @@
         if (b.enemy.hp < b.enemy.maxHp * 0.45 && b.enemy.shield <= 0)
           moves = moves.filter(m => m.type === 'shield');
         break;
+      case 'aggressive':
+        // Presses the attack when the operative is wounded, drops the shield option.
+        if (b.player.hp < b.player.maxHp * 0.4)
+          moves = moves.filter(m => m.type === 'attack' || m.type === 'heavy');
+        break;
+      case 'trickster':
+        // Reapplies time pressure only when the timer debuff has lapsed.
+        if (b.player.slow > 0) moves = moves.filter(m => m.type !== 'slow');
+        break;
+      case 'disruptor':
+        // Targets hoarded combo/energy; skips its disruption moves when there is nothing to break.
+        if (b.player.combo < 2) moves = moves.filter(m => m.type !== 'combo');
+        if (b.player.energy < 4) moves = moves.filter(m => m.type !== 'drain');
+        break;
+      case 'berserker':
+        // Injured midboss escalates: a stronger self-charged ultimate comes online.
+        if (b.enemy.hp < b.enemy.maxHp * 0.45) {
+          const ult = def.moves.find(m => m.type === 'ult');
+          if (ult) moves.push({ type: 'ult', value: ult.value + 6, weight: 3 });
+        }
+        break;
       case 'boss':
         if (b.enemy.hp < b.enemy.maxHp * 0.3) {
           const ult = def.moves.find(m => m.type === 'ult');
@@ -111,6 +132,8 @@
     }
     // Boss/berserker never re-telegraph while an ult is already charging
     if (b.enemy.chargingUlt) moves = moves.filter(m => m.type !== 'ult');
+    // Safety: a behavior profile must never starve the enemy of options.
+    if (!moves.length) moves = def.moves.slice();
 
     const total = moves.reduce((s, m) => s + m.weight, 0);
     let roll = math().random() * total;
@@ -268,9 +291,7 @@
     }
 
     // Execute the chosen ability
-    if (q.purpose && q.purpose.type !== 'end') {
-      events.push(...executeAbility(b, q.purpose));
-    }
+    if (q.purpose) events.push(...executeAbility(b, q.purpose));
     b.lastResult = 'ok';
     return events;
   };
@@ -456,27 +477,28 @@
     if (p.overclock > 0) { p.overclock--; }
     if (b.enemy.reflectTurns > 0) b.enemy.reflectTurns--;
 
-    // Base structures upkeep
+    // Base structures upkeep — values come from data().structures[].perLevel
     const st = b.structures;
+    const sDef = data().structures.reduce((m, s) => { m[s.id] = s; return m; }, {});
     if (st.firewall > 0) {
-      const amt = st.firewall * 4;
+      const amt = st.firewall * sDef.firewall.perLevel;
       p.shield += amt;
       events.push({ kind: 'playerShield', amount: amt, source: 'firewall' });
     }
     if (st.medbay > 0) {
-      const healed = Math.min(st.medbay * 4, p.maxHp - p.hp);
+      const healed = Math.min(st.medbay * sDef.medbay.perLevel, p.maxHp - p.hp);
       if (healed > 0) { p.hp += healed; events.push({ kind: 'playerHeal', amount: healed, source: 'medbay' }); }
     }
 
     // Energy income
-    let gain = data().playerBase.energyPerTurn + (p.overclock > 0 ? 1 : 0) + st.reactor;
+    let gain = data().playerBase.energyPerTurn + (p.overclock > 0 ? 1 : 0) + st.reactor * sDef.reactor.perLevel;
     const before = p.energy;
     p.energy = Math.min(p.energyMax, p.energy + gain);
     if (p.energy > before) events.push({ kind: 'energy', amount: p.energy - before, why: 'giliran' });
 
     // Turret: passive attack on the current enemy
     if (st.turret > 0 && b.enemy.hp > 0) {
-      const dmg = st.turret * 5;
+      const dmg = st.turret * sDef.turret.perLevel;
       const ev = damageEnemy(b, dmg, true);
       B.log(b, 'atk', 'Turret Kode menembak ' + b.enemy.name + ': ' + ev.dealt + ' damage.');
       events.push({ kind: 'turretShot', dealt: ev.dealt, absorbed: ev.absorbed });

@@ -45,11 +45,14 @@ npx serve .
 
 ```bash
 npm install        # hanya untuk pengujian (jsdom)
-npm test
+npm test           # lint + qa + e2e (server uji otomatis, tanpa setup)
 ```
 
+- `npm run lint` — cek sintaks semua file JS (`node --check`), tanpa dependensi.
 - `npm run qa` — stress test mesin matematika & simulasi 200 pertarungan (ribuan asersi): setiap jawaban diverifikasi terhadap evaluator polinom independen, plus cek gelombang, struktur, dan mekanik musuh.
-- `npm run e2e` — uji wiring end-to-end di jsdom (butuh server lokal): alur title → tutorial → battle → menang/kalah → level-up → wave → Benteng → Latihan Bebas → save.
+- `npm run e2e` — uji wiring end-to-end di jsdom: alur title → tutorial → battle → menang/kalah → level-up → wave → Benteng → Latihan Bebas → save. Menyalakan server statis sementara sendiri (tidak perlu `python -m http.server`).
+
+CI (GitHub Actions) menjalankan `lint` + `test` pada tiap push ke `main` dan pull request.
 
 ## Struktur Proyek
 

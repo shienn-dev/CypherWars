@@ -15,7 +15,8 @@
       unlockedStage: 1,        // highest stage id available to play
       sound: true,
       stats: { wins: 0, losses: 0, correct: 0, wrong: 0, bestCombo: 0 },
-      seenIntro: false
+      seenIntro: false,
+      clearedFinal: false
     };
   }
 
