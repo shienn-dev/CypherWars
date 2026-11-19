@@ -52,7 +52,9 @@
         analyzeReady: false
       },
       turn: 1, phase: 'player',       // player | question | enemy | over
-      question: null, lastResult: null, log: []
+      question: null, lastResult: null, log: [],
+      soalUsed: [],            // indeks bank soal yang sudah keluar di pertarungan ini
+      finisherUsed: false      // soal enkripsi finisher hanya keluar sekali
     };
     B.spawnEnemy(b, waves[0]);
     B.log(b, 'sys', 'Menghubungi ' + b.enemy.name + ' \u2014 ' + b.enemy.title);
@@ -227,7 +229,17 @@
   B.makeQuestion = (b, playerState, opts) => {
     opts = opts || {};
     let tier = Math.max(1, Math.min(5, b.stage.tier + (opts.tierBonus || 0)));
-    const q = math().generate(tier, opts.kind);
+    const soal = window.CW.soal;
+    const finisher = B.finisherReady(b, opts.purpose);
+    let q;
+    if (finisher) {
+      b.finisherUsed = true;
+      q = soal.pickFinisher(b.stage.id, tier);
+    } else if (!opts.kind && soal && soal.hasBank(b.stage.id)) {
+      q = soal.pick(b.stage.id, tier, b.soalUsed);
+    } else {
+      q = math().generate(tier, opts.kind);
+    }
     const p = b.player;
     let time = math().baseTime(tier);
     if (p.slow > 0) time *= 0.65;
@@ -237,10 +249,21 @@
       time,
       analyze: p.analyzeReady,     // consume analyze when question created
       interrupt: opts.isInterrupt || false,
+      finisher,
       purpose: opts.purpose || null
     };
+    if (finisher) B.log(b, 'good', 'CELAH TERBUKA! Pecahkan enkripsi untuk serangan penutup.');
     if (p.analyzeReady) { p.analyzeReady = false; B.log(b, 'good', 'ANALISIS aktif: langkah penyelesaian ditampilkan.'); }
     return b.question;
+  };
+
+  /* Finisher enkripsi: hanya untuk serangan ke boss sektor yang punya pool finisher,
+     saat HP boss sudah di bawah ambang, dan sekali per pertarungan. */
+  B.finisherReady = (b, purpose) => {
+    const soal = window.CW.soal;
+    return !!(soal && soal.hasFinisher(b.stage.id) && !b.finisherUsed &&
+      b.enemyDef.boss && purpose && purpose.type === 'attack' &&
+      b.enemy.hp > 0 && b.enemy.hp <= b.enemy.maxHp * data().finisherHpPct);
   };
 
   /* ---------- Resolve player action after question ---------- */
@@ -310,6 +333,11 @@
 
     // Execute the chosen ability
     if (q.purpose) events.push(...executeAbility(b, q.purpose));
+    if (q.finisher && b.enemy.hp > 0) {
+      const ev = damageEnemy(b, b.enemy.hp, true);
+      B.log(b, 'good', 'ENKRIPSI DIPECAHKAN! Serangan penutup menembus inti ' + b.enemy.name + '.');
+      events.push({ kind: 'enemyHit', dealt: ev.dealt, absorbed: ev.absorbed, pierce: true });
+    }
     b.lastResult = 'ok';
     return events;
   };

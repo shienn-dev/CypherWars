@@ -317,7 +317,7 @@
 
   /* Verify a numeric answer (string compare for symbolic). */
   M.check = (q, choice) => {
-    if (q.kind === 'symbolic') return String(choice).trim() === String(q.answer).trim();
+    if (q.kind === 'symbolic' || q.kind === 'bank') return String(choice).trim() === String(q.answer).trim();
     return Number(choice) === Number(q.answer);
   };
 

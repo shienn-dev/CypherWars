@@ -270,6 +270,7 @@
   D.shardPerKill = 5;       // bonus Shards per enemy taken down
   D.playerBase = { hp: 90, hpPerLevel: 6, energyMax: 7, energyPerTurn: 1, startEnergy: 3 };
   D.questionTime = 90;
+  D.finisherHpPct = 0.3;    // HP boss (fraksi) saat soal enkripsi finisher bisa muncul
   D.xpForLevel = lvl => 60 + (lvl - 1) * 45;   // XP needed to go from lvl to lvl+1
   D.comboBonusEnergy = [3, 5];                  // combo thresholds granting +1 energy
   D.maxComboBonus = 5;                          // combo multiplier cap

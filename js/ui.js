@@ -422,7 +422,9 @@
     $('q-timerfill').classList.remove('urgent');
     $('q-time').classList.remove('urgent');
 
-    $('q-tag').textContent = questionData.interrupt
+    $('q-tag').textContent = questionData.finisher
+      ? '\u2605 ENKRIPSI FINISHER \u2014 SERANGAN PENUTUP'
+      : questionData.interrupt
       ? '\u2620 INTERUPSI \u2014 PROTOKOL TINGGI'
       : (questionData.purpose && questionData.purpose.name
         ? 'DEKRIPSI \u00B7 ' + questionData.purpose.name.toUpperCase()

@@ -13,6 +13,7 @@
 global.window = {};
 require('../js/math.js');
 require('../js/data.js');
+require('../js/soal.js');
 require('../js/battle.js');
 
 const CW = window.CW;
@@ -402,6 +403,63 @@ console.log('== Enemy AI always returns a valid move ==');
   w.player.shield = 0;
   CW.battle.startPlayerTurn(w);
   assert(w.player.shield === 2 * fw.perLevel, 'firewall honors perLevel (' + w.player.shield + ')');
+}
+
+console.log('== Bank soal & finisher enkripsi ==');
+{
+  const S = CW.soal;
+  const checkEntry = (e, label) => {
+    assert(e.o.length === 4, label + ' punya 4 opsi');
+    assert(new Set(e.o).size === 4, label + ' opsinya unik');
+    assert(e.p && e.s && e.t, label + ' lengkap (soal, pembahasan, materi)');
+  };
+  for (const st of CW.data.stages) {
+    assert(S.hasBank(st.id), 'sektor ' + st.id + ' punya bank soal');
+    S.bank[st.id].forEach((e, i) => {
+      checkEntry(e, 'S' + st.id + '-' + (i + 1));
+      assert(e.t !== 'E', 'S' + st.id + '-' + (i + 1) + ' bukan soal enkripsi');
+    });
+  }
+  assert(Object.keys(S.finisher).join() === '5,10', 'finisher hanya di sektor 5 dan 10');
+  Object.keys(S.finisher).forEach(id => S.finisher[id].forEach((e, i) => checkEntry(e, 'F' + id + '-' + i)));
+
+  const ps = { level: 5, stats: { correct: 0, wrong: 0, bestCombo: 0 } };
+  const strike = { type: 'attack', name: 'Serang', id: 'strike' };
+
+  // Satu putaran penuh di sektor 1 tidak mengulang soal.
+  const b1 = CW.battle.create(CW.data.stages[0], ps);
+  const seen = new Set();
+  for (let i = 0; i < S.bank[1].length; i++) {
+    const qd = CW.battle.makeQuestion(b1, ps, { purpose: strike });
+    assert(qd.q.kind === 'bank' && !qd.finisher, 'sektor 1 memakai bank soal biasa');
+    assert(qd.q.options.includes(qd.q.answer), 'jawaban ada di opsi');
+    seen.add(qd.q.prompt);
+    CW.battle.answer(b1, ps, qd.q.answer, false);
+    b1.enemy.hp = b1.enemy.maxHp;
+  }
+  assert(seen.size === S.bank[1].length, 'tidak ada soal berulang dalam satu putaran (' + seen.size + ')');
+
+  // Finisher: tidak muncul saat HP tinggi, muncul sekali saat HP rendah, dan menumbangkan boss.
+  for (const idx of [4, 9]) {
+    const b = CW.battle.create(CW.data.stages[idx], ps);
+    const q0 = CW.battle.makeQuestion(b, ps, { purpose: strike });
+    assert(!q0.finisher, 'sektor ' + (idx + 1) + ': finisher tidak muncul saat HP penuh');
+    CW.battle.answer(b, ps, q0.q.answer, false);
+    b.enemy.hp = Math.floor(b.enemy.maxHp * CW.data.finisherHpPct);
+    b.enemy.shield = 50;
+    const guard = { type: 'shield', name: 'Perisai', value: 10 };
+    assert(!CW.battle.makeQuestion(b, ps, { purpose: guard }).finisher, 'finisher hanya untuk serangan');
+    b.question = null;
+    const qf = CW.battle.makeQuestion(b, ps, { purpose: strike });
+    assert(qf.finisher && qf.q.topic === 'E', 'sektor ' + (idx + 1) + ': finisher enkripsi muncul saat HP rendah');
+    CW.battle.answer(b, ps, qf.q.answer, false);
+    assert(b.enemy.hp === 0, 'finisher benar menumbangkan boss');
+    b.enemy.hp = 5;
+    assert(!CW.battle.makeQuestion(b, ps, { purpose: strike }).finisher, 'finisher hanya sekali per pertarungan');
+  }
+  const b3 = CW.battle.create(CW.data.stages[2], ps);
+  b3.enemy.hp = 1;
+  assert(!CW.battle.makeQuestion(b3, ps, { purpose: strike }).finisher, 'sektor non-boss tanpa finisher');
 }
 
 console.log('\n' + checks + ' checks run, ' + failures + ' failures');
