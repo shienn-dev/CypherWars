@@ -22,7 +22,7 @@
   D.enemies = {
     sentinel: {
       name: 'SENTINEL-01', title: 'Penjaga Gerbang',
-      hp: 60, svg: 'sentinel', color: '#4dd8ff',
+      hp: 60, svg: 'sentinel', portrait: 'assets/guardian-sentinel.png', color: '#4dd8ff',
       ai: 'aggressive', tier: 1, reward: 40,
       intro: 'Protokol dasar terdeteksi. Hitung komposisi fungsinya untuk menembus!',
       moves: [
@@ -69,6 +69,10 @@
     rex: {
       name: 'KALKULUS REX', title: 'Raja Derivatif \u2605 MIDBOSS',
       hp: 120, svg: 'rex', color: '#ff8f5e',
+      operativeAdvantage: {
+        operative: 'bastion', effect: 'shield', multiplier: 1.25,
+        note: 'Shield Bastion menguat 25% melawan Kalkulus Rex.'
+      },
       ai: 'berserker', tier: 3, reward: 110, boss: true,
       intro: 'BOSS! Ia mengisi pukulan dahsyat \u2014 lihat telegraf-nya dan bersiap!',
       moves: [
@@ -129,6 +133,10 @@
     nexus: {
       name: 'NEXUS PRIME', title: 'Inti Sempurna \u2605 BOSS AKHIR',
       hp: 170, svg: 'nexus', color: '#ff5ef1',
+      operativeAdvantage: {
+        operative: 'oracle', effect: 'weaken', multiplier: 1.5,
+        note: 'Jamming Oracle melemahkan serangan Nexus 60%.'
+      },
       ai: 'boss', tier: 5, reward: 200, boss: true,
       intro: 'BOSS AKHIR! Guardian tertua. Kegelapan seluruh jaringan berpusat di sini.',
       moves: [
@@ -195,8 +203,45 @@
     {
       id: 'execute', name: 'Eksekusi Total', icon: 'skull', cost: 5, unlock: 7,
       desc: 'Damage 40 + bonus combo. Sanggulan terakhir melawan boss.', type: 'attack', value: 40, combo: 4
+    },
+    {
+      id: 'barrier', name: 'Perisai Lapisan', icon: 'shield', cost: 2, unlock: 1,
+      desc: 'Bangun lapisan pelindung kuat: +22 SHIELD.', type: 'shield', value: 22
+    },
+    {
+      id: 'repair', name: 'Kit Nanomedik', icon: 'heart', cost: 2, unlock: 1,
+      desc: 'Pulihkan 16 HP dengan kit perbaikan cepat.', type: 'heal', value: 16
+    },
+    {
+      id: 'fortress', name: 'Benteng Bergerak', icon: 'shield', cost: 3, unlock: 3,
+      desc: 'Aktifkan lapisan benteng: +34 SHIELD.', type: 'shield', value: 34
+    },
+    {
+      id: 'jam', name: 'Jamming Taktis', icon: 'chip', cost: 1, unlock: 1,
+      desc: 'Kurangi 40% damage dari serangan langsung musuh berikutnya.', type: 'weaken', value: 40
     }
   ];
+
+  D.operatives = {
+    katalis: {
+      id: 'katalis', name: 'KATALIS', role: 'PENYERANG KOMBO', icon: 'sword', color: '#ff5ef1',
+      desc: 'Bangun combo lalu lepaskan serangan besar dan penetrasi shield.',
+      stats: { hpBonus: 0, startEnergyBonus: 0 },
+      moves: ['strike', 'guard', 'analyze', 'quantum', 'pierce', 'regen', 'overclock', 'interrupt', 'execute']
+    },
+    bastion: {
+      id: 'bastion', name: 'BASTION', role: 'PERTAHANAN & PEMULIHAN', icon: 'shield', color: '#8be9a0',
+      desc: 'Tahan serangan dengan shield berlapis dan pulihkan HP saat terdesak.',
+      stats: { hpBonus: 20, startEnergyBonus: 0 },
+      moves: ['strike', 'guard', 'analyze', 'barrier', 'repair', 'fortress', 'regen', 'overclock', 'interrupt']
+    },
+    oracle: {
+      id: 'oracle', name: 'ORACLE', role: 'KONTROL & TAKTIK', icon: 'eye', color: '#ffd166',
+      desc: 'Baca pola musuh, lemahkan serangannya, lalu manfaatkan energi dengan tepat.',
+      stats: { hpBonus: 0, startEnergyBonus: 1 },
+      moves: ['strike', 'analyze', 'guard', 'jam', 'overclock', 'interrupt', 'quantum', 'pierce', 'execute']
+    }
+  };
 
   /* ---------- Base structures (Defense Protocol) ----------
      Built between waves with Data Shards. Each build/upgrade costs a
@@ -224,6 +269,7 @@
   D.shardPerCorrect = 2;    // Data Shards earned per correct decryption
   D.shardPerKill = 5;       // bonus Shards per enemy taken down
   D.playerBase = { hp: 90, hpPerLevel: 6, energyMax: 7, energyPerTurn: 1, startEnergy: 3 };
+  D.questionTime = 90;
   D.xpForLevel = lvl => 60 + (lvl - 1) * 45;   // XP needed to go from lvl to lvl+1
   D.comboBonusEnergy = [3, 5];                  // combo thresholds granting +1 energy
   D.maxComboBonus = 5;                          // combo multiplier cap

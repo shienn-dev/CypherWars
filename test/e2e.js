@@ -27,7 +27,8 @@ const SAVE_KEY = 'cipherwars_save_v1';
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json'
+  '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg', '.png': 'image/png', '.json': 'application/json'
 };
 
 /* Tiny static file server so `npm test` is self-contained (no python needed). */
@@ -71,7 +72,7 @@ async function waitFor(fn, label, timeout = 8000) {
 function seedSave(over) {
   over = over || {};
   const base = {
-    version: 1, xp: 0, level: 1, unlockedStage: 1, sound: false, seenIntro: true,
+    version: 2, xp: 0, level: 1, operative: 'katalis', unlockedStage: 1, sound: false, seenIntro: true,
     stats: { wins: 0, losses: 0, correct: 0, wrong: 0, bestCombo: 0 }
   };
   const s = Object.assign(base, over);
@@ -191,6 +192,9 @@ async function runA() {
   const b = win.CW.main.battle;
   assert(b && b.enemy.name === 'SENTINEL-01', 'battle created vs SENTINEL-01');
   assert(doc(dom).getElementById('enemy-name').textContent === 'SENTINEL-01', 'enemy name rendered');
+  const stageOnePortrait = doc(dom).querySelector('#enemy-visual .enemy-portrait');
+  assert(stageOnePortrait && stageOnePortrait.getAttribute('src') === 'assets/guardian-sentinel.png',
+    'stage 1 renders the custom Sentinel portrait');
   assert(doc(dom).getElementById('player-hptext').textContent === '90 / 90', 'player full HP rendered');
   assert(doc(dom).getElementById('intent-icon').textContent.trim().length > 0, 'enemy intent telegraph rendered');
   assert(actionButtons(dom).map(a => a.name).join(',') === 'Serang,Perisai Darurat,Analisis,Akhiri Giliran',
@@ -199,6 +203,9 @@ async function runA() {
   /* --- wrong answer path (with hint + timer checks) --- */
   const turn0 = b.turn;
   await doAction(dom, 'Serang');
+  assert(doc(dom).getElementById('q-time').textContent === '90', 'question timer starts at 1:30');
+  assert(doc(dom).getElementById('q-answer').textContent === 'Jawaban: ' + b.question.q.answer,
+    'correct answer is shown while the question is open');
   assert(qOptions(dom).length === 4, '4 answer options rendered');
   assert(qOptions(dom).every(o => o.textContent.trim() !== ''), 'options non-empty');
   doc(dom).getElementById('q-hint').click();
@@ -348,15 +355,20 @@ async function runD() {
   assert(!cards[4].classList.contains('locked'), 'stage 5 unlocked');
   assert(cards[4].classList.contains('boss-stage'),
     'SEKTOR 05 (KALKULUS REX) carries the boss badge');
+  assert(cards[4].textContent.includes('ADVANTAGE: BASTION'), 'Rex matchup recommends Bastion');
   assert(!cards[8].classList.contains('boss-stage'), 'SEKTOR 09 (non-boss AI) has no boss badge');
   assert(cards[9].classList.contains('locked') && !cards[9].classList.contains('boss-stage'),
     'locked final boss has no boss badge');
+  assert(cards[9].textContent.includes('ADVANTAGE: ORACLE'), 'Nexus matchup recommends Oracle');
 
   doc(dom).getElementById('btn-codex').click();
   await sleep(80);
   assert(screenVisible(dom, 'screen-codex'), 'codex opens');
   assert(doc(dom).querySelectorAll('#codex-abilities .ability-card').length === 9, 'codex lists 9 abilities');
   assert(doc(dom).querySelectorAll('#codex-bestiary .bestiary-card').length === 10, 'bestiary lists 10 guardians');
+  const codexSentinelPortrait = doc(dom).querySelector('#codex-bestiary .bestiary-card .bestiary-portrait');
+  assert(codexSentinelPortrait && codexSentinelPortrait.getAttribute('src') === 'assets/guardian-sentinel.png',
+    'bestiary shows the unlocked Sentinel portrait');
   doc(dom).getElementById('btn-codex-back').click();
   await sleep(80);
   assert(screenVisible(dom, 'screen-map'), 'codex back returns to map');
@@ -552,6 +564,64 @@ async function runH() {
   win.close();
 }
 
+/* ================= Run I: selectable Operatives + fixed movesets ================= */
+async function runI() {
+  console.log('\n== Run I: Operative selection + distinct movesets ==');
+  const legacySave = JSON.parse(seedSave({ seenIntro: true }));
+  legacySave.version = 1;
+  delete legacySave.operative;
+  const { dom, pageErrors } = await boot({ save: JSON.stringify(legacySave) });
+  const win = dom.window;
+  const d = doc(dom);
+
+  d.getElementById('btn-continue').click();
+  await sleep(80);
+  assert(d.getElementById('btn-operatives').textContent.includes('KATALIS'), 'Katalis is the default Operative');
+  const migratedSave = JSON.parse(win.localStorage.getItem(SAVE_KEY));
+  assert(migratedSave.version === 2 && migratedSave.operative === 'katalis',
+    'legacy saves migrate to version 2 with Katalis selected');
+  d.getElementById('btn-operatives').click();
+  assert(!d.getElementById('modal-operatives').hidden, 'Operative picker opens');
+  assert(d.querySelectorAll('.operative-card').length === 3, 'picker shows three Operatives');
+
+  const bastionCard = [...d.querySelectorAll('.operative-card')]
+    .find(card => card.querySelector('h3').textContent === 'BASTION');
+  bastionCard.querySelector('button').click();
+  assert(d.getElementById('modal-operatives').hidden, 'picker closes after selecting an Operative');
+  assert(d.getElementById('btn-operatives').textContent.includes('BASTION'), 'map shows the selected Operative');
+  assert(JSON.parse(win.localStorage.getItem(SAVE_KEY)).operative === 'bastion', 'selected Operative is saved');
+
+  d.querySelector('#stage-grid .stage-card').click();
+  await sleep(120);
+  assert(win.CW.main.battle.operative.name === 'BASTION', 'battle uses selected Operative');
+  assert(win.CW.main.battle.player.maxHp === 110 && win.CW.main.battle.player.energy === 3,
+    'Bastion battle starts with its HP bonus');
+  assert(actionButtons(dom).map(a => a.name).join(',') ===
+    'Serang,Perisai Darurat,Analisis,Perisai Lapisan,Kit Nanomedik,Akhiri Giliran',
+    'Bastion has its defensive and recovery moves');
+  const turn = win.CW.main.battle.turn;
+  await doAction(dom, 'Perisai Lapisan');
+  await answerQuestion(dom, 'correct');
+  await settle(dom, turn, 'Bastion barrier');
+  assert(win.CW.main.battle.log.some(l => l.msg.includes('Perisai Lapisan: SHIELD +22')),
+    'Bastion barrier resolves in battle');
+
+  d.getElementById('btn-flee').click();
+  d.getElementById('btn-operatives').click();
+  const oracleCard = [...d.querySelectorAll('.operative-card')]
+    .find(card => card.querySelector('h3').textContent === 'ORACLE');
+  oracleCard.querySelector('button').click();
+  d.querySelector('#stage-grid .stage-card').click();
+  await sleep(120);
+  assert(actionButtons(dom).some(a => a.name === 'Jamming Taktis'), 'Oracle has its unique control move');
+  assert(win.CW.main.battle.player.maxHp === 90 && win.CW.main.battle.player.energy === 4,
+    'Oracle battle starts with its energy bonus');
+  assert(JSON.parse(win.localStorage.getItem(SAVE_KEY)).operative === 'oracle', 'changing Operative persists');
+
+  assert(pageErrors.length === 0, 'no uncaught page errors in run I' + (pageErrors[0] ? ': ' + pageErrors[0] : ''));
+  win.close();
+}
+
 /* ================= runner ================= */
 (async () => {
   let server = null;
@@ -560,11 +630,11 @@ async function runH() {
     BASE = 'http://localhost:' + server.address().port + '/';
   }
   console.log('CIPHER WARS E2E (jsdom) — target ' + BASE);
-  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE, f: runF, g: runG, h: runH };
+  const runs = { a: runA, b: runB, c: runC, d: runD, e: runE, f: runF, g: runG, h: runH, i: runI };
   const only = process.argv[2];
   try {
     if (only && runs[only]) await runs[only]();
-    else { await runA(); await runB(); await runC(); await runD(); await runE(); await runF(); await runG(); await runH(); }
+    else { await runA(); await runB(); await runC(); await runD(); await runE(); await runF(); await runG(); await runH(); await runI(); }
   } catch (e) {
     failures++;
     console.error('\nFATAL: ' + ((e && e.stack) || e));

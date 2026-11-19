@@ -321,8 +321,8 @@
     return Number(choice) === Number(q.answer);
   };
 
-  /* Time budget (seconds) for a question, before stage/debuff pressure. */
-  M.baseTime = tier => [0, 30, 30, 35, 40, 45][Math.max(1, Math.min(5, tier | 0))];
+  /* Every difficulty tier gets the same 90-second question budget. */
+  M.baseTime = () => window.CW.data.questionTime;
 
   /* Self-test hook used by the QA script (Node) — nothing in-game. */
   M._internals = { trim, buildStack, ri, pick };

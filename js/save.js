@@ -9,9 +9,10 @@
 
   function fresh() {
     return {
-      version: 1,
+      version: 2,
       xp: 0,
       level: 1,
+      operative: 'katalis',
       unlockedStage: 1,        // highest stage id available to play
       sound: true,
       stats: { wins: 0, losses: 0, correct: 0, wrong: 0, bestCombo: 0 },
@@ -25,9 +26,15 @@
       const raw = localStorage.getItem(KEY);
       if (!raw) return fresh();
       const data = JSON.parse(raw);
-      return Object.assign(fresh(), data, {
+      const state = Object.assign(fresh(), data, {
         stats: Object.assign(fresh().stats, data.stats || {})
       });
+      if (data.version === 1) {
+        state.version = 2;
+        state.operative = 'katalis';
+        S.persist(state);
+      }
+      return state;
     } catch (e) { return fresh(); }
   };
 
