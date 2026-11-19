@@ -63,6 +63,8 @@
     $('map-xpfill').style.width = Math.min(100, save.xp / need * 100) + '%';
     $('map-xptext').textContent = 'XP ' + save.xp + '/' + need;
     $('btn-sound').textContent = save.sound ? '\uD83D\uDD0A' : '\uD83D\uDD07';
+    const operative = CW.data.operatives[save.operative] || CW.data.operatives.katalis;
+    $('btn-operatives').textContent = 'OPERATIVE: ' + operative.name;
 
     const grid = $('stage-grid');
     grid.innerHTML = '';
@@ -78,10 +80,43 @@
         '<div class="stage-enemy" style="color:' + enemy.color + '">' + enemy.name + '</div>' +
         '<div class="stage-meta"><span>HP ' + enemy.hp + '</span><span>TIER ' + st.tier + '</span>' +
         '<span>' + aiLabel(enemy.ai) + '</span></div>' +
+        (enemy.operativeAdvantage
+          ? '<div class="stage-matchup" title="' + enemy.operativeAdvantage.note + '">ADVANTAGE: ' +
+            CW.data.operatives[enemy.operativeAdvantage.operative].name + '</div>'
+          : '') +
         (done ? '<span class="stage-done">\u2713</span>' : '') +
         (unlocked ? '' : '<span class="stage-lock">\uD83D\uDD12</span>');
       if (unlocked) card.addEventListener('click', () => { CW.audio.ui.click(); U.onStageSelect(st); });
       grid.appendChild(card);
+    });
+  };
+
+  U.renderOperatives = save => {
+    const list = $('operative-list');
+    list.innerHTML = '';
+    Object.keys(CW.data.operatives).forEach(id => {
+      const operative = CW.data.operatives[id];
+      const selected = id === save.operative;
+      const stats = CW.battle.operativeStats(save.level, id);
+      const card = el('article', 'operative-card' + (selected ? ' selected' : ''));
+      const moves = CW.battle.operativeAbilities(id).map(ab =>
+        '<span class="operative-move">' + ab.name +
+        (ab.unlock > 1 ? '<small>LV ' + ab.unlock + '</small>' : '') + '</span>'
+      ).join('');
+      card.innerHTML =
+        '<div class="operative-emblem" style="color:' + operative.color + '">' + (U.icons[operative.icon] || '') + '</div>' +
+        '<div class="operative-role" style="color:' + operative.color + '">' + operative.role + '</div>' +
+        '<h3>' + operative.name + '</h3>' +
+        '<p>' + operative.desc + '</p>' +
+        '<div class="operative-stats"><span>HP ' + stats.maxHp + '</span>' +
+        '<span>ENERGI ' + stats.startEnergy + '/' + stats.maxEnergy + '</span></div>' +
+        '<div class="operative-moves">' + moves + '</div>';
+      const button = el('button', 'btn btn-sm ' + (selected ? 'btn-primary' : 'btn-ghost'),
+        selected ? 'DIPILIH' : 'Pilih');
+      button.disabled = selected;
+      button.addEventListener('click', () => U.onOperativeSelect(id));
+      card.appendChild(button);
+      list.appendChild(card);
     });
   };
 
@@ -97,7 +132,7 @@
   U.renderCodex = save => {
     const list = $('codex-abilities');
     list.innerHTML = '';
-    CW.data.abilities.forEach(ab => {
+    CW.battle.operativeAbilities(save.operative).forEach(ab => {
       const unlocked = ab.unlock <= save.level;
       list.appendChild(el('div', 'ability-card' + (unlocked ? '' : ' locked'),
         '<div class="ability-icon">' + (U.icons[ab.icon] || '') + '</div>' +
@@ -113,7 +148,9 @@
       const e = CW.data.enemies[st.enemy];
       const seen = st.id < save.unlockedStage || (st.id === save.unlockedStage && save.stats.wins > 0);
       best.appendChild(el('div', 'bestiary-card',
-        '<div style="color:' + e.color + '">' + (seen ? U.glyphs[e.svg] : '<svg viewBox="0 0 100 100"><text x="50" y="58" text-anchor="middle" font-size="34" fill="currentColor">?</text></svg>') + '</div>' +
+        '<div style="color:' + e.color + '">' + (seen
+          ? (e.portrait ? '<img class="bestiary-portrait" src="' + e.portrait + '" alt="' + e.name + '">' : U.glyphs[e.svg])
+          : '<svg viewBox="0 0 100 100"><text x="50" y="58" text-anchor="middle" font-size="34" fill="currentColor">?</text></svg>') + '</div>' +
         '<b style="color:' + (seen ? e.color : 'var(--text-dim)') + '">' + (seen ? e.name : '???') + '</b>' +
         '<span class="ai-tag">' + (seen ? e.title + ' \u00B7 ' + aiLabel(e.ai) : 'Belum dihadapi') + '</span>'));
     });
@@ -135,7 +172,14 @@
     $('bh-turn').textContent = 'GILIRAN ' + B.turn;
     $('enemy-name').textContent = B.enemy.name;
     $('enemy-name').style.color = B.enemy.color;
-    $('enemy-visual').innerHTML = '<div style="color:' + B.enemy.color + ';filter:drop-shadow(0 0 14px ' + B.enemy.color + ')">' + U.glyphs[B.enemy.svg] + '</div>';
+    $('bt-operative').textContent = B.operative.name;
+    $('bt-operative').style.color = B.operative.color;
+    const enemyVisual = $('enemy-visual');
+    const portrait = B.enemyDef.portrait;
+    enemyVisual.classList.toggle('has-portrait', !!portrait);
+    enemyVisual.innerHTML = portrait
+      ? '<img class="enemy-portrait" src="' + portrait + '" alt="' + B.enemy.name + '">'
+      : '<div style="color:' + B.enemy.color + ';filter:drop-shadow(0 0 14px ' + B.enemy.color + ')">' + U.glyphs[B.enemy.svg] + '</div>';
     $('bt-level').textContent = saveRef.level;
     U.updateHUD();
     $('battle-log').innerHTML = '';
@@ -184,7 +228,8 @@
     $('enemy-status').innerHTML =
       (e.chargingUlt ? '<span class="status-chip charging">\u2620 MENGISI ULTIMATE</span>' : '') +
       (e.reflectTurns > 0 ? '<span class="status-chip reflect">\uD83E\uDE9E CERMIN (' + e.reflectTurns + ')</span>' : '') +
-      (e.enrage > 0 ? '<span class="status-chip enrage">\uD83D\uDD25 AMUK +' + e.enrage + '%</span>' : '');
+      (e.enrage > 0 ? '<span class="status-chip enrage">\uD83D\uDD25 AMUK +' + e.enrage + '%</span>' : '') +
+      (e.weaken > 0 ? '<span class="status-chip weaken">JAM \u2212' + e.weaken + '%</span>' : '');
     // Player
     $('player-hpfill').style.width = (p.hp / p.maxHp * 100) + '%';
     $('player-hptext').textContent = p.hp + ' / ' + p.maxHp;
@@ -246,7 +291,7 @@
     const box = $('actions');
     box.innerHTML = '';
     const p = B.player;
-    const abilities = CW.battle.unlockedAbilities(saveRef.level);
+    const abilities = CW.battle.unlockedAbilities(saveRef.level, B.operative.id);
 
     abilities.forEach(ab => {
       const btn = el('button', 'act-btn ' + btnClass(ab));
@@ -372,6 +417,10 @@
     Q.total = questionData.time * 1000;
     Q.tLeft = Q.total;
     Q.lastTickSecond = -1;
+    $('q-time').textContent = questionData.time;
+    $('q-timerfill').style.width = '100%';
+    $('q-timerfill').classList.remove('urgent');
+    $('q-time').classList.remove('urgent');
 
     $('q-tag').textContent = questionData.interrupt
       ? '\u2620 INTERUPSI \u2014 PROTOKOL TINGGI'
@@ -379,6 +428,7 @@
         ? 'DEKRIPSI \u00B7 ' + questionData.purpose.name.toUpperCase()
         : 'DEKRIPSI DIPERLUKAN');
     $('q-prompt').textContent = questionData.q.prompt;
+    $('q-answer').textContent = 'Jawaban: ' + questionData.q.answer;
 
     const steps = $('q-steps');
     if (questionData.analyze) {

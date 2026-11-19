@@ -28,24 +28,42 @@ pantulan) dihitung **menang**.
 | 9 | Menara Omega | OMEGA-WARD → MIRRORBOT | 5 | 0.80 |
 | 10 | Inti NEXUS | NEXUS PRIME ★ → KALKULUS REX | 5 | 0.75 |
 
+Boss memiliki kecocokan Operative opsional: shield Bastion +25% melawan KALKULUS REX;
+Jamming Oracle melemahkan serangan NEXUS sebesar 60% (normal 40%). Peta menampilkan
+rekomendasi ini, tetapi Katalis tetap dapat mengalahkan keduanya dengan strategi damage.
+
 ## Soal (dibangkitkan prosedural, eksak)
 - **eval** — hitung nilai `(f ∘ g)(x)` untuk `x` bulat (rantai 2–3 fungsi).
 - **solve** — selesaikan `f(x) = k` untuk `x` (linear, jawaban bulat).
 - **symbolic** — tentukan bentuk `(f ∘ g)(x)`.
 
-5 tier kesulitan mengatur bentuk fungsi (linear/kuadrat/komposisi berlapis). Anggaran waktu:
-`baseTime = [–, 30, 30, 35, 40, 45]` detik × `timeMod` sektor; debuff **slow** mengali ×0,65.
+5 tier kesulitan mengatur bentuk fungsi (linear/kuadrat/komposisi berlapis). Setiap soal di
+semua tier dan sektor mendapat **90 detik**; debuff **slow** dari musuh tetap mengali timer ×0,65.
 Distraktor dibuat dari miskonsepsi umum: urutan komposisi dibalik, `f·g`, `f+g`, lupa
 substitusi, konstanta hilang, tanda dibalik.
 
-## Ability (9, terbuka seiring level)
+## Operative & moveset
+Pemain memilih satu Operative dari peta. Pilihan tersimpan dan berlaku untuk misi berikutnya;
+tiap Operative memiliki moveset tetap, dengan ability yang terbuka seiring level.
+
+| Operative | Gaya bermain | Fokus moveset | Bonus stat (level 1) |
+|-----------|--------------|----------------|---------------------|
+| Katalis | Penyerang kombo | Serangan besar, combo, dan penetrasi shield | Baseline: 90 HP, 3/7 energi |
+| Bastion | Pertahanan & pemulihan | Shield berlapis dan heal | +20 HP (110 total) |
+| Oracle | Kontrol & taktik | Melemahkan serangan langsung dan mengelola energi | +1 energi awal (4/7) |
+
+## Ability (13 ability, dipetakan ke moveset dan terbuka seiring level)
 | Ability | Energi | Level | Efek |
 |---------|:---:|:---:|------|
 | Serang | 0 | 1 | Damage dasar (naik oleh Combo) |
 | Perisai Darurat | 1 | 1 | +10 SHIELD |
 | Analisis | 1 | 1 | Soal berikutnya menampilkan langkah penyelesaian |
+| Perisai Lapisan | 2 | 1 | +22 SHIELD (Bastion) |
+| Kit Nanomedik | 2 | 1 | Pulihkan 16 HP (Bastion) |
+| Jamming Taktis | 1 | 1 | Damage serangan langsung musuh berikutnya −40% (Oracle) |
 | Serangan Kuantum | 2 | 2 | Damage 22 + bonus combo |
 | Penembus Kode | 3 | 3 | Damage 26, menembus shield (anti-pantulan) |
+| Benteng Bergerak | 3 | 3 | +34 SHIELD (Bastion) |
 | Regenerasi | 2 | 4 | Pulihkan 22 HP |
 | Overclock | 2 | 5 | +1 energi/giliran selama 3 giliran |
 | Interupsi | 2 | 5 | Batalkan ultimate musuh (soal lebih sulit) |
@@ -55,7 +73,7 @@ Damage serangan: `round(base × (1 + min(combo,5) × 0,15))`.
 Serang tanpa nilai = `10 + combo×2`; ability bernilai memakai `value`.
 
 ## Energi & combo
-- Energi maks 7, mulai 3, +1/giliran (bonus dari Overclock & Reaktor).
+- Energi maks 7, +1/giliran (bonus dari Overclock & Reaktor). Katalis dan Bastion mulai dengan 3 energi; Oracle mulai dengan 4.
 - Combo +1 tiap jawaban benar (tidak pernah dari salah). Ambang combo **3** dan **5**
   memberi +1 energi. Rasio Combo dibatasi 5 untuk pengali damage.
 
@@ -95,7 +113,8 @@ Shard: **+2** per dekripsi benar, **+5** per musuh tumbang.
 ## Progresi
 - XP musuh: sesuai `reward` tiap musuh; pengulangan sektor hanya 40%.
 - `xpForLevel(lvl) = 60 + (lvl−1)×45`. Naik level → kemampuan baru + HP maks (+6/level).
-- HP Operative dasar 90.
+- HP dasar Katalis dan Oracle 90 (+6/level); Bastion mendapat +20 HP.
+- Operative pilihan disimpan bersama progres; save lama otomatis memakai Katalis sebagai default.
 
 ## Mode belajar
 - **Materi** (Kamus Kode): definisi `(f ∘ g)(x)=f(g(x))`, contoh, kesalahan umum.

@@ -11,25 +11,42 @@
   const math = () => window.CW.math;
 
   /* ---------- Player derived stats ---------- */
-  B.playerMaxHp = lvl => data().playerBase.hp + (lvl - 1) * data().playerBase.hpPerLevel;
+  B.operativeStats = (lvl, operativeId) => {
+    const operative = data().operatives[operativeId] || data().operatives.katalis;
+    const base = data().playerBase;
+    return {
+      maxHp: base.hp + (lvl - 1) * base.hpPerLevel + operative.stats.hpBonus,
+      maxEnergy: base.energyMax,
+      startEnergy: Math.min(base.energyMax, base.startEnergy + operative.stats.startEnergyBonus)
+    };
+  };
+  B.playerMaxHp = (lvl, operativeId) => B.operativeStats(lvl, operativeId).maxHp;
 
-  B.unlockedAbilities = lvl => data().abilities.filter(a => a.unlock <= lvl);
+  B.operativeAbilities = operativeId => {
+    const operative = data().operatives[operativeId] || data().operatives.katalis;
+    return operative.moves.map(id => data().abilities.find(ab => ab.id === id));
+  };
+  B.unlockedAbilities = (lvl, operativeId) =>
+    B.operativeAbilities(operativeId).filter(ab => ab.unlock <= lvl);
 
   /* ---------- Factory ---------- */
   B.create = (stage, playerState) => {
     const waves = (stage.waves && stage.waves.length) ? stage.waves.slice() : [stage.enemy];
+    const operative = data().operatives[playerState.operative] || data().operatives.katalis;
+    const stats = B.operativeStats(playerState.level, operative.id);
     const b = {
       stage,
       waves,
       waveIndex: 0,
+      operative,
       enemyDef: null,
       enemy: null,
       structures: { firewall: 0, turret: 0, reactor: 0, medbay: 0 },
       player: {
-        name: 'OPERATIVE', maxHp: B.playerMaxHp(playerState.level),
-        hp: B.playerMaxHp(playerState.level),
-        shield: 0, energy: data().playerBase.startEnergy,
-        energyMax: data().playerBase.energyMax,
+        name: operative.name, maxHp: stats.maxHp,
+        hp: stats.maxHp,
+        shield: 0, energy: stats.startEnergy,
+        energyMax: stats.maxEnergy,
         combo: 0, bestCombo: 0, shards: 0,
         poison: 0, poisonDmg: 0, slow: 0, overclock: 0,
         analyzeReady: false
@@ -55,7 +72,8 @@
       chargingUlt: null,      // move object when ult is telegraphed
       nextMove: null,         // telegraphed intent for the upcoming enemy turn
       reflectTurns: 0,        // turns of damage reflection remaining
-      enrage: 0               // percentage damage bonus (permanent this fight)
+      enrage: 0,              // percentage damage bonus (permanent this fight)
+      weaken: 0               // percent reduction applied to the next direct attack
     };
     return b.enemy;
   };
@@ -211,7 +229,7 @@
     let tier = Math.max(1, Math.min(5, b.stage.tier + (opts.tierBonus || 0)));
     const q = math().generate(tier, opts.kind);
     const p = b.player;
-    let time = math().baseTime(tier) * b.stage.timeMod;
+    let time = math().baseTime(tier);
     if (p.slow > 0) time *= 0.65;
     time = Math.max(8, Math.round(time));
     b.question = {
@@ -299,6 +317,10 @@
   function executeAbility(b, ab) {
     const events = [];
     const p = b.player;
+    const advantage = b.enemyDef.operativeAdvantage;
+    const advantageMultiplier = advantage && advantage.operative === b.operative.id
+      ? advantage.effect === ab.type ? advantage.multiplier : 1
+      : 1;
     switch (ab.type) {
       case 'attack': {
         const dmg = B.strikeDamage(b, ab);
@@ -312,9 +334,10 @@
         break;
       }
       case 'shield': {
-        p.shield += ab.value;
-        B.log(b, 'def', ab.name + ': SHIELD +' + ab.value + '.');
-        events.push({ kind: 'playerShield', amount: ab.value });
+        const amount = Math.round(ab.value * advantageMultiplier);
+        p.shield += amount;
+        B.log(b, 'def', ab.name + ': SHIELD +' + amount + '.');
+        events.push({ kind: 'playerShield', amount });
         break;
       }
       case 'heal': {
@@ -336,6 +359,13 @@
         events.push({ kind: 'overclock', turns: ab.value });
         break;
       }
+      case 'weaken': {
+        const amount = Math.min(75, Math.round(ab.value * advantageMultiplier));
+        b.enemy.weaken = amount;
+        B.log(b, 'def', ab.name + ': damage serangan langsung musuh berikutnya -' + amount + '%.');
+        events.push({ kind: 'enemyWeaken', amount });
+        break;
+      }
     }
     return events;
   }
@@ -347,7 +377,10 @@
     switch (move.type) {
       case 'attack':
       case 'heavy': {
-        const raw = Math.round(move.value * (1 + (b.enemy.enrage || 0) / 100));
+        const raw = Math.max(1, Math.round(
+          move.value * (1 + (b.enemy.enrage || 0) / 100) * (1 - (b.enemy.weaken || 0) / 100)
+        ));
+        b.enemy.weaken = 0;
         const ev = damagePlayer(b, raw);
         B.log(b, 'bad', name + ' menyerang: ' + raw + ' damage' + (ev.absorbed ? ' (' + ev.absorbed + ' diserap shield)' : '') + '.');
         events.push({ kind: 'playerHit', dealt: ev.dealt, absorbed: ev.absorbed, heavy: move.type === 'heavy' });
@@ -395,7 +428,10 @@
       }
       case 'ult': {
         // Should only be reached when landing a previously telegraphed ult
-        const raw = Math.round(move.value * (1 + (b.enemy.enrage || 0) / 100));
+        const raw = Math.max(1, Math.round(
+          move.value * (1 + (b.enemy.enrage || 0) / 100) * (1 - (b.enemy.weaken || 0) / 100)
+        ));
+        b.enemy.weaken = 0;
         const ev = damagePlayer(b, raw);
         B.log(b, 'bad', 'PROTOKOL PEMBERSIHAN! ' + name + ' melepas ULTIMATE: ' + raw + ' damage!');
         events.push({ kind: 'playerHit', dealt: ev.dealt, absorbed: ev.absorbed, ult: true });

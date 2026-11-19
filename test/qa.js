@@ -23,6 +23,10 @@ function assert(cond, msg) {
   if (!cond) { failures++; console.error('  FAIL: ' + msg); }
 }
 
+for (let tier = 1; tier <= 5; tier++) {
+  assert(CW.math.baseTime(tier) === 90, 'tier ' + tier + ' question timer is 90 seconds');
+}
+
 /* ---------- Independent polynomial reference evaluator ---------- */
 function refEval(stack, x) { // stack: array of coefficient arrays, inner first
   let v = x;
@@ -234,6 +238,59 @@ for (let sim = 0; sim < 200; sim++) {
   assert(b.player.energy >= 0 && b.player.energy <= b.player.energyMax, 'energy out of range');
   assert(b.player.combo >= 0, 'negative combo');
 }
+
+/* ================= 3b. Operative loadouts ================= */
+console.log('== Operative loadouts and tactical move ==');
+assert(Object.keys(CW.data.operatives).length === 3, 'three selectable Operatives are defined');
+const katalisMoves = CW.battle.unlockedAbilities(1, 'katalis').map(ab => ab.id);
+const bastionMoves = CW.battle.unlockedAbilities(1, 'bastion').map(ab => ab.id);
+const oracleMoves = CW.battle.unlockedAbilities(1, 'oracle').map(ab => ab.id);
+assert(katalisMoves.includes('strike') && katalisMoves.includes('guard'), 'Katalis keeps its original starter moves');
+assert(bastionMoves.includes('barrier') && bastionMoves.includes('repair'), 'Bastion starts with defense and recovery moves');
+assert(oracleMoves.includes('jam') && !oracleMoves.includes('repair'), 'Oracle has control moves instead of Bastion recovery');
+const bastionStats = CW.battle.operativeStats(1, 'bastion');
+const oracleStats = CW.battle.operativeStats(1, 'oracle');
+assert(bastionStats.maxHp === 110 && bastionStats.startEnergy === 3, 'Bastion trades extra HP for no energy bonus');
+assert(oracleStats.maxHp === 90 && oracleStats.startEnergy === 4, 'Oracle starts with one bonus energy');
+
+const oracleState = { level: 1, operative: 'oracle', stats: { correct: 0, wrong: 0, bestCombo: 0 } };
+const oracleBattle = CW.battle.create(CW.data.stages[0], oracleState);
+assert(oracleBattle.player.energy === 4 && oracleBattle.player.energyMax === 7,
+  'Oracle battle starts with 4 of 7 energy');
+for (const stage of CW.data.stages) {
+  const timerBattle = CW.battle.create(stage, oracleState);
+  const question = CW.battle.makeQuestion(timerBattle, oracleState);
+  assert(question.time === 90, 'stage ' + stage.id + ' question timer is 90 seconds');
+  timerBattle.player.slow = 1;
+  assert(CW.battle.makeQuestion(timerBattle, oracleState).time === 59,
+    'slow status still reduces the stage ' + stage.id + ' timer');
+}
+const jam = CW.battle.unlockedAbilities(1, 'oracle').find(ab => ab.id === 'jam');
+oracleBattle.enemy.nextMove = { type: 'attack', value: 10, weight: 1 };
+const jamQuestion = CW.battle.makeQuestion(oracleBattle, oracleState, { purpose: jam });
+const jamEvents = CW.battle.answer(oracleBattle, oracleState, jamQuestion.q.answer, false);
+assert(jamEvents.some(ev => ev.kind === 'enemyWeaken') && oracleBattle.enemy.weaken === 40,
+  'Jamming Taktis weakens the next direct attack');
+CW.battle.endPlayerPhase(oracleBattle);
+assert(oracleBattle.player.hp === 84 && oracleBattle.enemy.weaken === 0,
+  'weakened 10-damage attack deals 6 and consumes the jam');
+
+const bastionState = { level: 1, operative: 'bastion', stats: { correct: 0, wrong: 0, bestCombo: 0 } };
+const rexBattle = CW.battle.create(CW.data.stages[4], bastionState);
+const barrier = CW.battle.unlockedAbilities(1, 'bastion').find(ab => ab.id === 'barrier');
+const barrierQuestion = CW.battle.makeQuestion(rexBattle, bastionState, { purpose: barrier });
+CW.battle.answer(rexBattle, bastionState, barrierQuestion.q.answer, false);
+assert(rexBattle.player.shield === 28, 'Bastion gains a 25% shield bonus against Rex');
+
+const oracleNexusState = { level: 1, operative: 'oracle', stats: { correct: 0, wrong: 0, bestCombo: 0 } };
+const nexusBattle = CW.battle.create(CW.data.stages[9], oracleNexusState);
+const nexusJam = CW.battle.unlockedAbilities(1, 'oracle').find(ab => ab.id === 'jam');
+const nexusQuestion = CW.battle.makeQuestion(nexusBattle, oracleNexusState, { purpose: nexusJam });
+CW.battle.answer(nexusBattle, oracleNexusState, nexusQuestion.q.answer, false);
+nexusBattle.enemy.chargingUlt = { type: 'ult', value: 30 };
+nexusBattle.enemy.nextMove = null;
+CW.battle.endPlayerPhase(nexusBattle);
+assert(nexusBattle.player.hp === 78, 'Oracle reduces Nexus ultimate damage by 60%');
 
 /* ================= 4. Solve-type direct verification ================= */
 console.log('== Solve-type exact check: 1000 generations ==');

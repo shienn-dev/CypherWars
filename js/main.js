@@ -21,6 +21,7 @@
   /* ================= Boot ================= */
   function boot() {
     save = window.CW.save.load();
+    if (!data().operatives[save.operative]) save.operative = 'katalis';
     window.CW.audio.enabled = save.sound;
 
     $('btn-start').addEventListener('click', () => {
@@ -35,6 +36,15 @@
       window.CW.audio.ui.back();
       $('modal-howto').hidden = true;
       if (howtoClose) { const f = howtoClose; howtoClose = null; f(); }
+    });
+    $('btn-operatives').addEventListener('click', () => {
+      window.CW.audio.ui.click();
+      ui().renderOperatives(save);
+      $('modal-operatives').hidden = false;
+    });
+    $('btn-operatives-close').addEventListener('click', () => {
+      window.CW.audio.ui.back();
+      $('modal-operatives').hidden = true;
     });
 
     $('btn-codex').addEventListener('click', () => {
@@ -111,6 +121,7 @@
     setBusy(false);
     $('modal-result').hidden = true;
     $('modal-question').hidden = true;
+    $('modal-operatives').hidden = true;
     ui().renderMap(save);
     ui().showScreen('screen-map');
   }
@@ -165,6 +176,18 @@
   };
   window.CW.ui.flow = flow;   // exposed for testing hooks
   window.CW.ui.onStageSelect = stage => { if (!busy) startStage(stage); };
+  window.CW.ui.onOperativeSelect = id => {
+    const operative = data().operatives[id];
+    if (!operative) {
+      ui().toast('Operative tidak dikenal.', 'warn');
+      return;
+    }
+    save.operative = id;
+    persist();
+    $('modal-operatives').hidden = true;
+    ui().renderMap(save);
+    ui().toast(operative.name + ' siap bertugas.', 'gold');
+  };
 
   /* Construction resolved: shards only spent on a successful decrypt. */
   function resolveBuild(def, correct) {
@@ -341,6 +364,11 @@
         case 'overclock':
           await sleep(240);
           break;
+        case 'enemyWeaken':
+          window.CW.audio.fx.debuff();
+          window.CW.ui.toast('Serangan langsung musuh berikutnya melemah ' + ev.amount + '%!', 'good');
+          await sleep(420);
+          break;
         case 'shard':
           window.CW.audio.fx.energy();
           fx().energy(ev.amount);
@@ -405,7 +433,8 @@
     persist();
 
     const nextStages = data().stages.filter(s => s.id === stage.id + 1);
-    const newAbilities = data().abilities.filter(a => a.unlock > oldLevel && a.unlock <= save.level);
+    const newAbilities = window.CW.battle.operativeAbilities(save.operative)
+      .filter(a => a.unlock > oldLevel && a.unlock <= save.level);
 
     const html =
       '<div class="result-title win">' + (isFinal ? 'JARINGAN DIBEBASKAN' : 'GUARDIAN DIKALAHKAN') + '</div>' +

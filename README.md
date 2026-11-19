@@ -4,7 +4,7 @@ Game edukasi *turn-based RPG* untuk melatih **komposisi fungsi** (SMP/SMA), berb
 Dunia dikuasai para Cipher Guardian — satu-satunya senjata adalah kemampuan menghitung `(f ∘ g)(x)`.
 Setiap dekripsi yang benar adalah serangan; setiap kesalahan membuka celah bagi musuh untuk membalas.
 
-**100% vanilla JavaScript** — tanpa framework, tanpa build step, tanpa aset eksternal (SVG dan efek suara dibuat secara programatik).
+**100% vanilla JavaScript** — tanpa framework atau build step; SVG dan efek suara dibuat secara programatik, dengan sprite Sentinel lokal.
 
 ## Fitur
 
@@ -16,12 +16,15 @@ Setiap dekripsi yang benar adalah serangan; setiap kesalahan membuka celah bagi 
   - `eval` — hitung nilai `(f ∘ g)(-2)` dari rantai komposisi 2–3 fungsi
   - `solve` — selesaikan `f(x) = k`
   - `symbolic` — tentukan bentuk `(f ∘ g)(x)`
-- **5 tier kesulitan** — dari dua fungsi linear hingga komposisi kuadrat tiga lapis; timer mengecil seiring sektor.
+- **5 tier kesulitan** — dari dua fungsi linear hingga komposisi kuadrat tiga lapis; semua soal memberi 90 detik.
+- **Timer soal 90 detik** di semua sektor dan tier; efek Slow musuh tetap dapat memangkas waktu.
 - **Distraktor cerdas**: pilihan salah dibuat dari kesalahan umum siswa (mem balik urutan komposisi, mengalikan alih-alih menyusun, lupa substitusi, dsb).
-- **9 kemampuan** (Serang, Perisai, Analisis, Kuantum, Penembus Kode, Regenerasi, Overclock, Interupsi, Eksekusi Total) yang terbuka seiring level, sistem energi, combo, shield, poison/slow.
+- **3 Operative dengan moveset dan statistik berbeda**: Katalis (kombo), Bastion (+20 HP), dan Oracle (+1 energi awal). Pilih Operative sebelum misi; kemampuan mereka terbuka seiring level.
+- **Kecocokan boss**: shield Bastion lebih kuat melawan Kalkulus Rex; Jamming Oracle lebih efektif melawan Nexus. Kecocokan memberi keuntungan, bukan syarat menang.
+- **13 kemampuan** dengan efek serangan, shield, pemulihan, analisis, kontrol serangan musuh, serta sistem energi dan combo.
 - **Mode belajar**: tab **Materi** di Kamus Kode, layar **Latihan Bebas** (tanpa timer/musuh, pilih tier, buka langkah kapan saja), dan **tutorial interaktif** saat pertama main.
 - **Petunjuk & pembahasan lengkap** per soal (tombol 💡, atau ability Analisis untuk menampilkan langkah sebelum menjawab).
-- **Progres tersimpan** otomatis di localStorage — level, XP, sektor terbuka, statistik akurasi.
+- **Progres tersimpan** otomatis di localStorage — Operative terpilih, level, XP, sektor terbuka, statistik akurasi.
 - Efek suara WebAudio sintetis + mode bisu.
 
 ## Cara Menjalankan
@@ -50,7 +53,7 @@ npm test           # lint + qa + e2e (server uji otomatis, tanpa setup)
 
 - `npm run lint` — cek sintaks semua file JS (`node --check`), tanpa dependensi.
 - `npm run qa` — stress test mesin matematika & simulasi 200 pertarungan (ribuan asersi): setiap jawaban diverifikasi terhadap evaluator polinom independen, plus cek gelombang, struktur, dan mekanik musuh.
-- `npm run e2e` — uji wiring end-to-end di jsdom: alur title → tutorial → battle → menang/kalah → level-up → wave → Benteng → Latihan Bebas → save. Menyalakan server statis sementara sendiri (tidak perlu `python -m http.server`).
+- `npm run e2e` — uji wiring end-to-end di jsdom: alur title → tutorial → pilih Operative → battle → menang/kalah → level-up → wave → Benteng → Latihan Bebas → save. Menyalakan server statis sementara sendiri (tidak perlu `python -m http.server`).
 
 CI (GitHub Actions) menjalankan `lint` + `test` pada tiap push ke `main` dan pull request.
 
@@ -60,7 +63,7 @@ CI (GitHub Actions) menjalankan `lint` + `test` pada tiap push ke `main` dan pul
 index.html        markup semua layar (title, peta, codex, battle, modal soal)
 css/style.css     tema cyber-terminal, animasi & efek
 js/math.js        mesin polinom eksak + generator soal/tipe/distraktor
-js/data.js        musuh, AI, sektor, ability, tabel progresi
+js/data.js        musuh, AI, sektor, Operative, ability, tabel progresi
 js/battle.js      state machine pertarungan (murni logika, tanpa DOM)
 js/ui.js          rendering, modal soal + timer, FX animasi
 js/main.js        orkestrasi alur permainan & animasi event

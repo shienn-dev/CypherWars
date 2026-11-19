@@ -47,6 +47,16 @@
     </div>
   </div>
 
+  <!-- ============ OPERATIVE SELECTION ============ -->
+  <div class="modal" id="modal-operatives" role="dialog" aria-modal="true" aria-label="Pilih Operative" hidden>
+    <div class="modal-box operative-box">
+      <h2>PILIH OPERATIVE</h2>
+      <p class="operative-intro">Setiap Operative punya gaya bermain dan moveset tetap. Pilihan berlaku untuk misi berikutnya.</p>
+      <div class="operative-grid" id="operative-list"></div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="btn-operatives-close">Kembali</button></div>
+    </div>
+  </div>
+
   <!-- ============ CAMPAIGN MAP ============ -->
   <section class="screen" id="screen-map">
     <header class="hud-top">
@@ -58,6 +68,7 @@
         </div>
       </div>
       <div class="hud-right">
+        <button class="btn btn-ghost btn-sm" id="btn-operatives">OPERATIVE: KATALIS</button>
         <button class="btn btn-ghost btn-sm" id="btn-practice">Latihan Bebas</button>
         <button class="btn btn-ghost btn-sm" id="btn-codex">Kamus Kode</button>
         <button class="btn btn-ghost btn-sm" id="btn-sound">🔊</button>
@@ -162,7 +173,7 @@
     <div class="player-panel">
       <div class="player-row">
         <div class="player-id">
-          <span class="player-name">OPERATIVE</span>
+          <span class="player-name" id="bt-operative">KATALIS</span>
           <span class="lvl-badge">LV <b id="bt-level">1</b></span>
         </div>
         <div class="hpbar player-hp"><div class="hp-fill" id="player-hpfill"></div><span class="hp-text" id="player-hptext"></span></div>
@@ -190,6 +201,7 @@
         <span class="q-time" id="q-time">30</span>
       </div>
       <div class="q-prompt" id="q-prompt"></div>
+      <div class="q-answer" id="q-answer"></div>
       <div class="q-steps" id="q-steps" hidden></div>
       <div class="q-options" id="q-options"></div>
       <div class="q-foot">

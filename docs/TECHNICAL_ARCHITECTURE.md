@@ -9,7 +9,7 @@ bundler, tanpa dependency runtime.** Satu-satunya dev-dependency: `jsdom` (untuk
 index.html            markup semua layar & modal; memuat skrip berurutan
 css/style.css         tema cyber-terminal, animasi, responsif
 js/math.js            mesin polinom eksak + generator soal
-js/data.js            data gameplay (musuh, sektor, struktur, ability, progresi)
+js/data.js            data gameplay (musuh, sektor, struktur, Operative, ability, progresi)
 js/audio.js           SFX WebAudio sintetis
 js/save.js            localStorage + kurva XP
 js/battle.js          state machine pertarungan (murni, tanpa DOM)
@@ -37,7 +37,7 @@ Setiap modul adalah IIFE yang menempel ke satu namespace:
 - `baseTime(tier)` — anggaran waktu detik.
 
 ### `CW.data` (data gameplay)
-`enemies`, `stages` (dengan `waves`), `structures`, `abilities`, `shardPerCorrect`,
+`enemies`, `stages` (dengan `waves`), `structures`, `operatives`, `abilities`, `shardPerCorrect`,
 `shardPerKill`, `playerBase`, `xpForLevel(lvl)`, `comboBonusEnergy`, `maxComboBonus`.
 
 ### `CW.battle` (logika murni, tanpa DOM)
@@ -47,11 +47,11 @@ Setiap modul adalah IIFE yang menempel ke satu namespace:
 - Resolusi: `answer(b, playerState, choice, timedOut) → events[]`.
 - Benteng: `buildCost`, `canBuild`, `buildInfo`, `applyBuild`, `awardKill`.
 - Giliran: `endPlayerPhase(b)`, `startPlayerTurn(b)`, `spendEnergy`.
-- Lain: `playerMaxHp`, `unlockedAbilities`, `pickEnemyMove`, `strikeDamage`,
+- Lain: `playerMaxHp`, `operativeStats`, `operativeAbilities`, `unlockedAbilities`, `pickEnemyMove`, `strikeDamage`,
   `enemyDead`, `playerDead`, `log(b, type, msg)`.
 
 ### `CW.ui` (render + input)
-`showScreen`, `toast`, `icons`, `glyphs`, `renderMap`, `renderCodex`,
+`showScreen`, `toast`, `icons`, `glyphs`, `renderMap`, `renderOperatives`, `renderCodex`,
 `bindBattle`, `renderBattle`, `updateHUD`, `renderStructures`, `refreshLog`, `renderActions`,
 `setActionsLocked`, `openBuild/closeBuild/renderBuildList`, `fx.*`,
 `openQuestion/onHint/onGiveUp`, `showResult/hideResult`,
@@ -75,7 +75,7 @@ dan `B` (battle aktif), serta mengatur `busy` (kunci input selama animasi).
 `battle.answer`, `endPlayerPhase`, `startPlayerTurn` mengembalikan array event:
 `correct, energy, shard, enemyHit, playerReflect, playerHit, enemyShield, playerShield,
 playerHeal, enemyHeal, drain, poison, slow, comboBreak, telegraph, enemyAct, interrupt,
-fizzle, poisonTick, statusTick, analyze, overclock, turretShot, enemyReflect, enemyEnrage,
+fizzle, poisonTick, statusTick, analyze, overclock, enemyWeaken, turretShot, enemyReflect, enemyEnrage,
 cleanse, battleOver`.
 
 `main.animateEvents(events)` menerjemahkan tiap event menjadi SFX (`CW.audio.fx`) + FX visual
@@ -92,13 +92,14 @@ Build **melewati** `battle.answer` (tak memicu balasan musuh, tak memakan gilira
 dipotong saat dekripsi berhasil (`applyBuild`). `stats.correct/wrong` tetap dicatat.
 
 ## Save (localStorage)
-Key: **`cipherwars_save_v1`**, `version: 1`.
+Key: **`cipherwars_save_v1`**, payload `version: 2`.
 ```js
-{ version, xp, level, unlockedStage, sound,
+{ version, xp, level, operative, unlockedStage, sound,
   stats: { wins, losses, correct, wrong, bestCombo },
   seenIntro, clearedFinal }
 ```
-`load()` melakukan `Object.assign` dangkal dengan `fresh()` (tanpa validasi skema penuh).
+`load()` memigrasi payload versi 1 ke versi 2 dengan memilih Katalis sebagai default, lalu
+melakukan `Object.assign` dangkal dengan `fresh()` (tanpa validasi skema penuh).
 `grantXp(state, amount)` memutasi `state` dan mengembalikan `{level, leveledUp, levelsGained}`.
 Mengubah skema → naikkan versi + tambahkan migrasi.
 
