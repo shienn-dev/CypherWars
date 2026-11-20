@@ -271,6 +271,10 @@
         case 'correct':
           window.CW.ui.updateHUD();
           break;
+        case 'playerMove':
+          fx().playerMove(ev.ability);
+          await sleep(100);
+          break;
         case 'enemyHit':
           if (ev.dealt > 0) {
             if (ev.ability === 'execute' || ev.ability === 'pierce') window.CW.audio.fx.bigHit();

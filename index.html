@@ -89,6 +89,13 @@
       <div class="hud-right"><button class="btn btn-ghost btn-sm" id="btn-codex-back">◀ Kembali</button></div>
     </header>
     <div class="codex-wrap">
+      <div class="codex-setting">
+        <div>
+          <b>KUNCI JAWABAN SOAL</b>
+          <p>Atur apakah jawaban benar ditampilkan saat pertarungan.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-answer-key-toggle" type="button" aria-controls="q-answer" aria-pressed="true">Kunci Jawaban: Aktif</button>
+      </div>
       <h3 class="codex-title">ARSENAL OPERATIVE</h3>
       <div class="ability-list" id="codex-abilities"></div>
       <h3 class="codex-title">ARSIP GUARDIAN</h3>
@@ -158,11 +165,8 @@
         <span class="intent-text" id="intent-text">Menganalisis…</span>
       </div>
       <div class="enemy-stage" id="enemy-stage">
-        <div class="enemy-status" id="enemy-status"></div>
+        <div class="operative-visual" id="operative-visual" aria-hidden="true"></div>
         <div class="enemy-visual" id="enemy-visual"></div>
-        <div class="enemy-name" id="enemy-name"></div>
-        <div class="hpbar enemy-hp"><div class="hp-fill" id="enemy-hpfill"></div><span class="hp-text" id="enemy-hptext"></span></div>
-        <div class="enemy-shield" id="enemy-shield"></div>
       </div>
     </div>
 
@@ -171,20 +175,32 @@
 
     <!-- Player panel -->
     <div class="player-panel">
-      <div class="player-row">
-        <div class="player-id">
-          <span class="player-name" id="bt-operative">KATALIS</span>
-          <span class="lvl-badge">LV <b id="bt-level">1</b></span>
+      <div class="battle-status-cards">
+        <div class="player-status-card">
+          <div class="player-row">
+            <div class="player-id">
+              <span class="player-name" id="bt-operative">KATALIS</span>
+              <span class="lvl-badge">LV <b id="bt-level">1</b></span>
+            </div>
+            <div class="hpbar player-hp"><div class="hp-fill" id="player-hpfill"></div><span class="hp-text" id="player-hptext"></span></div>
+          </div>
+          <div class="player-row2">
+            <div class="energy-pips" id="energy-pips" title="Energi"></div>
+            <div class="shard-meter" id="shard-meter">⬡ 0 SHARD</div>
+            <div class="combo-meter" id="combo-meter">COMBO x0</div>
+          </div>
+          <div class="player-effects">
+            <div class="shield-bar" id="player-shield"></div>
+            <div class="player-status" id="player-status"></div>
+          </div>
         </div>
-        <div class="hpbar player-hp"><div class="hp-fill" id="player-hpfill"></div><span class="hp-text" id="player-hptext"></span></div>
+        <div class="enemy-card">
+          <div class="enemy-name" id="enemy-name"></div>
+          <div class="hpbar enemy-hp"><div class="hp-fill" id="enemy-hpfill"></div><span class="hp-text" id="enemy-hptext"></span></div>
+          <div class="enemy-shield" id="enemy-shield"></div>
+          <div class="enemy-status" id="enemy-status"></div>
+        </div>
       </div>
-      <div class="player-row2">
-        <div class="energy-pips" id="energy-pips" title="Energi"></div>
-        <div class="player-status" id="player-status"></div>
-        <div class="shard-meter" id="shard-meter">⬡ 0 SHARD</div>
-        <div class="combo-meter" id="combo-meter">COMBO x0</div>
-      </div>
-      <div class="shield-bar" id="player-shield"></div>
       <div class="structures" id="structures"></div>
 
       <div class="actions" id="actions"></div>

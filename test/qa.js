@@ -272,6 +272,8 @@ const jamQuestion = CW.battle.makeQuestion(oracleBattle, oracleState, { purpose:
 const jamEvents = CW.battle.answer(oracleBattle, oracleState, jamQuestion.q.answer, false);
 assert(jamEvents.some(ev => ev.kind === 'enemyWeaken') && oracleBattle.enemy.weaken === 40,
   'Jamming Taktis weakens the next direct attack');
+assert(jamEvents.some(ev => ev.kind === 'playerMove' && ev.ability === 'jam'),
+  'Jamming Taktis emits its matching player move animation');
 CW.battle.endPlayerPhase(oracleBattle);
 assert(oracleBattle.player.hp === 84 && oracleBattle.enemy.weaken === 0,
   'weakened 10-damage attack deals 6 and consumes the jam');

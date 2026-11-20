@@ -174,7 +174,13 @@
     $('enemy-name').style.color = B.enemy.color;
     $('bt-operative').textContent = B.operative.name;
     $('bt-operative').style.color = B.operative.color;
+    const operativeVisual = $('operative-visual');
+    operativeVisual.style.color = B.operative.color;
+    operativeVisual.classList.remove('moving');
+    delete operativeVisual.dataset.move;
+    operativeVisual.innerHTML = '<img src="assets/operative-miles.png" alt="">';
     const enemyVisual = $('enemy-visual');
+    enemyVisual.classList.remove('hit', 'attack', 'dead');
     const portrait = B.enemyDef.portrait;
     enemyVisual.classList.toggle('has-portrait', !!portrait);
     enemyVisual.innerHTML = portrait
@@ -364,6 +370,11 @@
   }
 
   U.fx = {
+    playerMove: ability => {
+      const v = $('operative-visual');
+      v.dataset.move = ability;
+      v.classList.remove('moving'); void v.offsetWidth; v.classList.add('moving');
+    },
     enemyHit: dealt => {
       const v = $('enemy-visual');
       v.classList.remove('hit'); void v.offsetWidth; v.classList.add('hit');
@@ -409,6 +420,18 @@
     tLeft: 0, total: 1, answered: false, onResolve: null, lastTickSecond: -1
   };
   let currentQuestionData = null;
+  let answerKeyEnabled = true;
+
+  function updateAnswerKeyToggle() {
+    $('q-answer').hidden = !answerKeyEnabled;
+    $('btn-answer-key-toggle').textContent = 'Kunci Jawaban: ' + (answerKeyEnabled ? 'Aktif' : 'Nonaktif');
+    $('btn-answer-key-toggle').setAttribute('aria-pressed', String(answerKeyEnabled));
+  }
+
+  $('btn-answer-key-toggle').addEventListener('click', () => {
+    answerKeyEnabled = !answerKeyEnabled;
+    updateAnswerKeyToggle();
+  });
 
   U.openQuestion = (questionData, onResolve) => {
     currentQuestionData = questionData;
@@ -431,6 +454,7 @@
         : 'DEKRIPSI DIPERLUKAN');
     $('q-prompt').textContent = questionData.q.prompt;
     $('q-answer').textContent = 'Jawaban: ' + questionData.q.answer;
+    updateAnswerKeyToggle();
 
     const steps = $('q-steps');
     if (questionData.analyze) {

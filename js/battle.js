@@ -313,6 +313,7 @@
     events.push({ kind: 'correct', combo: b.player.combo });
     b.player.shards += data().shardPerCorrect;
     events.push({ kind: 'shard', amount: data().shardPerCorrect });
+    if (q.purpose && q.purpose.id) events.push({ kind: 'playerMove', ability: q.purpose.id });
 
     // Interrupt: cancel telegraphed ult
     if (q.interrupt) {

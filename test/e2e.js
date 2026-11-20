@@ -195,6 +195,25 @@ async function runA() {
   const stageOnePortrait = doc(dom).querySelector('#enemy-visual .enemy-portrait');
   assert(stageOnePortrait && stageOnePortrait.getAttribute('src') === 'assets/guardian-sentinel.png',
     'stage 1 renders the custom Sentinel portrait');
+  const enemyVisual = doc(dom).getElementById('enemy-visual');
+  enemyVisual.classList.add('dead');
+  win.CW.ui.renderBattle();
+  assert(!enemyVisual.classList.contains('dead'),
+    'rendering a battle clears stale enemy death animation');
+  const enemyCard = doc(dom).querySelector('.enemy-card');
+  assert(enemyCard && enemyCard.contains(doc(dom).getElementById('enemy-name')) &&
+    enemyCard.contains(doc(dom).getElementById('enemy-hpfill')),
+  'enemy name and HP render inside the enemy status card');
+  const playerCard = doc(dom).querySelector('.player-status-card');
+  assert(playerCard && playerCard.contains(doc(dom).getElementById('bt-operative')) &&
+    playerCard.contains(doc(dom).getElementById('player-hpfill')),
+  'Operative name and HP render inside the player status card');
+  const statusCards = doc(dom).querySelector('.battle-status-cards');
+  assert(statusCards && statusCards.contains(enemyCard) && statusCards.contains(playerCard),
+    'player and enemy status cards render together in the player panel');
+  const operativePortrait = doc(dom).querySelector('#operative-visual img');
+  assert(operativePortrait && operativePortrait.getAttribute('src') === 'assets/operative-miles.png',
+    'player portrait renders in the battle arena');
   assert(doc(dom).getElementById('player-hptext').textContent === '90 / 90', 'player full HP rendered');
   assert(doc(dom).getElementById('intent-icon').textContent.trim().length > 0, 'enemy intent telegraph rendered');
   assert(actionButtons(dom).map(a => a.name).join(',') === 'Serang,Perisai Darurat,Analisis,Akhiri Giliran',
@@ -364,6 +383,14 @@ async function runD() {
   doc(dom).getElementById('btn-codex').click();
   await sleep(80);
   assert(screenVisible(dom, 'screen-codex'), 'codex opens');
+  const answerKey = doc(dom).getElementById('q-answer');
+  const answerKeyToggle = doc(dom).getElementById('btn-answer-key-toggle');
+  answerKeyToggle.click();
+  assert(answerKey.hidden && answerKeyToggle.getAttribute('aria-pressed') === 'false',
+    'codex answer-key toggle hides the answer');
+  answerKeyToggle.click();
+  assert(!answerKey.hidden && answerKeyToggle.getAttribute('aria-pressed') === 'true',
+    'codex answer-key toggle shows the answer again');
   assert(doc(dom).querySelectorAll('#codex-abilities .ability-card').length === 9, 'codex lists 9 abilities');
   assert(doc(dom).querySelectorAll('#codex-bestiary .bestiary-card').length === 10, 'bestiary lists 10 guardians');
   const codexSentinelPortrait = doc(dom).querySelector('#codex-bestiary .bestiary-card .bestiary-portrait');
